@@ -131,7 +131,7 @@
         .file-name { font-size: 12px; word-break: break-all; }
 
         #explorerActions {
-            padding: 8px; background: #2d2d2d; display: flex; gap: 8px; justify-content: center;
+            padding: 8px; background: #2d2d2d; display: none; gap: 8px; justify-content: center;
             border-top: 1px solid #444;
         }
         #explorerActions button {
@@ -139,7 +139,7 @@
         }
         #explorerActions button:hover { background: #666; }
 
-        /* ПАНЕЛЬ ЗАДАЧ — СПРАВА ОТ ПУСК */
+        /* ПАНЕЛЬ ЗАДАЧ */
         #taskbar-apps {
             display: flex; gap: 4px; margin-left: 8px; flex: 1; justify-content: flex-start;
             overflow-x: auto; max-width: calc(100% - 160px);
@@ -170,14 +170,14 @@
             50% { opacity: 1; }
         }
 
-        /* БЛОКНОТ — ИСПРАВЛЕНО */
+        /* БЛОКНОТ */
         #notepadText {
             flex: 1; padding: 16px; background: #000; color: #0f0;
             font-family: monospace; border: none; outline: none; resize: none;
             font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow: auto;
         }
 
-        /* КАЛЬКУЛЯТОР — ИСПРАВЛЕНО */
+        /* КАЛЬКУЛЯТОР */
         #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; border-bottom: 1px solid #444; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; flex: 1; }
         .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; font-size: 18px; }
@@ -185,18 +185,15 @@
         .calc-btn.operator { background: #0a0; }
         .calc-btn.operator:hover { background: #0c0; }
 
-        /* СЛОМАННЫЕ ШРИФТЫ */
-        .broken-fonts * { font-family: monospace !important; font-style: italic; color: #f00 !important; }
+        /* ЭФФЕКТЫ */
+        .broken-fonts * { font-family: monospace !important; color: #f00 !important; font-style: italic; }
+        @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         /* BSOD */
         #bsod-screen {
             background: #0000ff; color: #fff; font-size: 24px; text-align: center;
         }
         #bsod-screen p { margin: 20px; }
-
-        /* БЕСКОНЕЧНЫЙ ЗАПУСК */
-        #infinite-boot { animation: infinite-pulse 2s infinite; }
-        @keyframes infinite-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -214,8 +211,8 @@
     <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
 </div>
 
-<!-- BSOD ЭКРАН -->
-<div id="bsod-screen" class="screen" style="display: none;">
+<!-- BSOD -->
+<div id="bsod-screen" class="screen">
     <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
     <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
     <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
@@ -252,7 +249,7 @@
         </div>
         <div id="explorerPath">C:\</div>
         <div id="explorerContent"></div>
-        <div id="explorerActions" style="display:none;">
+        <div id="explorerActions">
             <button onclick="deleteSelected()">Удалить</button>
             <button onclick="renameSelected()">Переименовать</button>
         </div>
@@ -319,26 +316,24 @@
     const windowStates = {};
     let currentUser = "Гость";
 
-    // === ФАЙЛОВАЯ СИСТЕМА С ДОБАВЛЕННЫМИ ПАПКАМИ ===
+    // === ФАЙЛОВАЯ СИСТЕМА ===
     const fs = {
         'C:': {
             'HTML OS': {
-                type: 'folder',
-                system: true,
-                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file' }, 'SegoeUI.ttf': { type: 'file' } },
-                'System': { type: 'folder', 'Kernel.dll': { type: 'file' }, 'Registry.reg': { type: 'file' } },
-                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file' }, 'Config.sys': { type: 'file' } },
-                'Programs': { type: 'folder', 'Calc.exe': { type: 'file' }, 'Notepad.exe': { type: 'file' } },
-                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file' }, 'Audio.drv': { type: 'file' } },
-                'Config': { type: 'folder', 'Settings.ini': { type: 'file' }, 'UserPrefs.cfg': { type: 'file' } },
+                type: 'folder', system: true,
+                'Fonts': { type: 'folder', system: true, 'Arial.ttf': { type: 'file' }, 'SegoeUI.ttf': { type: 'file' } },
+                'System': { type: 'folder', system: true, 'Kernel.dll': { type: 'file' }, 'Registry.reg': { type: 'file' } },
+                'Boot': { type: 'folder', system: true, 'Bootloader.exe': { type: 'file' }, 'Config.sys': { type: 'file' } },
+                'Programs': { type: 'folder', system: true, 'Calc.exe': { type: 'file' }, 'Notepad.exe': { type: 'file' } },
+                'Drivers': { type: 'folder', system: true, 'Graphics.drv': { type: 'file' }, 'Audio.drv': { type: 'file' } },
+                'Config': { type: 'folder', system: true, 'Settings.ini': { type: 'file' }, 'UserPrefs.cfg': { type: 'file' } },
                 'Temp': { type: 'folder' },
-                'Logs': { type: 'folder', 'System.log': { type: 'file' } },
-                'Resources': { type: 'folder', 'Icons': { type: 'folder' } },
-                'Security': { type: 'folder', 'Firewall.rules': { type: 'file' } }
+                'Logs': { type: 'folder', system: true, 'System.log': { type: 'file' } },
+                'Resources': { type: 'folder', system: true, 'Icons': { type: 'folder' } },
+                'Security': { type: 'folder', system: true, 'Firewall.rules': { type: 'file' } }
             },
             'Users': {
-                type: 'folder',
-                system: true,
+                type: 'folder', system: true,
                 [currentUser]: {
                     type: 'folder',
                     'Загрузки': { type: 'folder' },
@@ -352,38 +347,45 @@
 
     let currentPath = ['C:'];
     let selectedFile = null;
-
-    // === СОХРАНЕНИЕ СОСТОЯНИЯ В LOCALSTORAGE ===
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
 
-    // === ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ===
-    function checkSystemIntegrity() {
-        if (systemState.deleted.includes('Fonts')) {
+    // === ПРИМЕНЕНИЕ ЭФФЕКТОВ УДАЛЕНИЯ ===
+    function applySystemEffects() {
+        const deleted = systemState.deleted;
+
+        if (deleted.includes('Fonts')) {
             document.body.classList.add('broken-fonts');
         }
-        if (systemState.deleted.includes('Boot')) {
-            document.getElementById('boot-screen').style.display = 'none';
-            document.getElementById('bsod-screen').style.display = 'flex';
-            return false;
+        if (deleted.includes('Boot')) {
+            goTo('bsod-screen');
+            return;
         }
-        if (systemState.deleted.includes('System')) {
-            // Бесконечный запуск
-            document.getElementById('boot-screen').classList.add('infinite-boot');
+        if (deleted.includes('System')) {
             setTimeout(() => {
-                alert('Ошибка: Временные файлы созданы. Система не может загрузиться.');
-                createTempFiles();
-            }, 5000);
-            return false;
+                if (!fs['C:']['HTML OS']['Temp']) fs['C:']['HTML OS']['Temp'] = { type: 'folder' };
+                for (let i = 1; i <= 10; i++) {
+                    fs['C:']['HTML OS']['Temp'][`crash_${i}.tmp`] = { type: 'file' };
+                }
+                alert('СИСТЕМНЫЙ СБОЙ: Ядро повреждено. Создано 10 временных файлов.');
+            }, 3000);
         }
-        return true;
-    }
-
-    // === СОЗДАНИЕ TEMP ФАЙЛОВ ===
-    function createTempFiles() {
-        let tempPath = fs['C:']['HTML OS']['Temp'] = fs['C:']['HTML OS']['Temp'] || { type: 'folder' };
-        for (let i = 1; i <= 5; i++) {
-            tempPath[`tmp${i}.tmp`] = { type: 'file' };
+        if (deleted.includes('Programs')) {
+            alert('ПРОГРАММЫ НЕДОСТУПНЫ: Приложения удалены из системы.');
+        }
+        if (deleted.includes('Drivers')) {
+            document.body.style.animation = 'flicker 0.3s infinite';
+            setTimeout(() => alert('ДРАЙВЕРЫ ОТСУТСТВУЮТ: Графика и звук не работают.'), 1000);
+        }
+        if (deleted.includes('Config')) {
+            alert('НАСТРОЙКИ СБРОШЕНЫ: Все параметры удалены.');
+            localStorage.clear();
+        }
+        if (deleted.includes('Security')) {
+            alert('СИСТЕМА УЯЗВИМА: Файрвол отключен.');
+        }
+        if (deleted.includes('Logs')) {
+            alert('ЛОГИ УДАЛЕНЫ: Ошибки не записываются.');
         }
     }
 
@@ -418,7 +420,10 @@
 
     // === ОКНА ===
     function openApp(id) {
-        if (!isMenuOpen && !minimizedApps[id]) return;
+        if (systemState.deleted.includes('Programs') && ['calc', 'notepad'].includes(id)) {
+            alert('Приложение недоступно: папка Programs удалена.');
+            return;
+        }
         const win = document.getElementById(id);
         win.classList.add('open');
         win.classList.remove('maximized');
@@ -444,179 +449,4 @@
 
     function minimizeApp(id) {
         const win = document.getElementById(id);
-        windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
-        win.classList.remove('open');
-        minimizedApps[id] = true;
-        updateTaskbar();
-    }
-
-    function toggleMaximize(id) {
-        const win = document.getElementById(id);
-        if (win.classList.contains('maximized')) {
-            win.classList.remove('maximized');
-            if (windowStates[id]) {
-                const s = windowStates[id];
-                win.style.top = s.top; win.style.left = s.left;
-                win.style.width = s.width; win.style.height = s.height;
-            }
-        } else {
-            windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
-            win.classList.add('maximized');
-        }
-    }
-
-    function dragStart(e, id) {
-        if (e.target.closest('.win-controls')) return;
-        const win = document.getElementById(id);
-        if (win.classList.contains('maximized')) return;
-        const rect = win.getBoundingClientRect();
-        const dragData = { id, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top };
-        function onMove(e) {
-            const x = e.clientX - dragData.offsetX;
-            const y = e.clientY - dragData.offsetY;
-            win.style.left = x + 'px'; win.style.top = y + 'px';
-        }
-        function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-        bringToFront(id);
-    }
-
-    function bringToFront(id) {
-        document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = '200');
-        document.getElementById(id).style.zIndex = '201';
-    }
-
-    function updateTaskbar() {
-        const container = document.getElementById('taskbar-apps');
-        container.innerHTML = '';
-        Object.keys(minimizedApps).forEach(id => {
-            const btn = document.createElement('div');
-            btn.className = 'taskbar-app';
-            btn.textContent = {explorer: 'Проводник', calc: 'Калькулятор', notepad: 'Блокнот'}[id];
-            btn.onclick = (e) => { e.stopPropagation(); openApp(id); };
-            container.appendChild(btn);
-        });
-    }
-
-    // === ПРОВОДНИК ===
-    function renderExplorer() {
-        const content = document.getElementById('explorerContent');
-        const path = document.getElementById('explorerPath');
-        path.textContent = currentPath.join('\\') + '\\';
-        content.innerHTML = '';
-        selectedFile = null;
-        document.getElementById('explorerActions').style.display = 'none';
-
-        let current = fs;
-        for (const p of currentPath) current = current[p] || {};
-
-        Object.keys(current).forEach(name => {
-            if (name === 'type' || name === 'system') return;
-            const item = current[name];
-            const div = document.createElement('div');
-            div.className = 'file-item';
-            div.innerHTML = `<div class="file-icon">${item.type === 'folder' ? '📁' : '📄'}</div><div class="file-name">${name}</div>`;
-            div.onclick = (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
-                div.classList.add('selected');
-                selectedFile = { name, path: [...currentPath, name] };
-                document.getElementById('explorerActions').style.display = 'flex';
-            };
-            div.ondblclick = () => {
-                if (item.type === 'folder') {
-                    currentPath.push(name);
-                    renderExplorer();
-                }
-            };
-            content.appendChild(div);
-        });
-
-        // Кнопка "Назад"
-        if (currentPath.length > 1) {
-            const back = document.createElement('div');
-            back.className = 'file-item';
-            back.innerHTML = `<div class="file-icon">⬅</div><div class="file-name">Назад</div>`;
-            back.onclick = () => { currentPath.pop(); renderExplorer(); };
-            content.insertBefore(back, content.firstChild);
-        }
-    }
-
-    function deleteSelected() {
-        if (!selectedFile) return;
-        let current = fs;
-        for (let i = 0; i < selectedFile.path.length - 1; i++) current = current[selectedFile.path[i]];
-        const deletedName = selectedFile.path[selectedFile.path.length - 1];
-        delete current[deletedName];
-
-        // Реалистичные последствия
-        if (deletedName === 'Fonts') {
-            systemState.deleted.push('Fonts');
-            alert('Шрифты удалены. Система теперь использует временные шрифты.');
-            document.body.classList.add('broken-fonts');
-        } else if (deletedName === 'Boot') {
-            systemState.deleted.push('Boot');
-            alert('Загрузочная папка удалена. При следующей загрузке система не запустится.');
-            createTempFiles();
-        } else if (deletedName === 'System') {
-            systemState.deleted.push('System');
-            alert('Системная папка удалена. Система создала временные файлы, но загрузка невозможна.');
-            createTempFiles();
-        } else if (deletedName.includes('.tmp')) {
-            alert('Временный файл удален, но система все равно повреждена.');
-        }
-
-        localStorage.setItem(stateKey, JSON.stringify(systemState));
-        renderExplorer();
-    }
-
-    function renameSelected() {
-        if (!selectedFile) return;
-        const newName = prompt('Новое имя:', selectedFile.name);
-        if (newName && newName !== selectedFile.name) {
-            let current = fs;
-            for (let i = 0; i < selectedFile.path.length - 1; i++) current = current[selectedFile.path[i]];
-            current[newName] = current[selectedFile.name];
-            delete current[selectedFile.name];
-            renderExplorer();
-        }
-    }
-
-    // === КАЛЬКУЛЯТОР ===
-    let calcVal = '0', calcOp = '', calcPrev = '';
-    function calc(input) {
-        const display = document.getElementById('calcDisplay');
-        if (input === 'C') { calcVal = '0'; calcOp = ''; calcPrev = ''; }
-        else if (input === '=') {
-            if (calcOp && calcPrev) {
-                try { calcVal = eval(`${calcPrev}${calcOp === '×' ? '*' : calcOp}${calcVal}`).toString(); }
-                catch { calcVal = 'Ошибка'; }
-            }
-            calcOp = ''; calcPrev = '';
-        }
-        else if (['+', '-', '*', '/', '×'].includes(input)) {
-            calcPrev = calcVal; calcOp = input === '×' ? '*' : input; calcVal = '0';
-        }
-        else { calcVal = calcVal === '0' ? input : calcVal + input; }
-        display.textContent = calcVal;
-    }
-
-    // Закрытие меню
-    document.addEventListener('click', e => {
-        if (!e.target.closest('#startBtn') && !e.target.closest('#startMenu') && !e.target.closest('.taskbar-app')) {
-            isMenuOpen = false;
-            document.getElementById('startMenu').classList.remove('open');
-        }
-    });
-
-    // Инициализация
-    setTimeout(() => {
-        if (checkSystemIntegrity()) {
-            document.getElementById('boot-screen').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
-        }
-    }, 2000);
-</script>
-</body>
-</html>
+        windowStates[id] = { top: win.style.top, left: win.style
