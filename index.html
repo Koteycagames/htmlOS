@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body, html { height: 100%; overflow: hidden; background: #000; color: #fff; }
+
+        .screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .screen.active { display: flex; }
+
+        /* 1. ЧЁРНЫЙ ЭКРАН */
+        #blackscreen button {
+            padding: 16px 32px;
+            font-size: 18px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        #blackscreen button:hover { background: #0c0; }
+
+        /* 2. ЗАДЕРЖКА 2 СЕКУНДЫ */
+        #delay1 { background: #000; }
+
+        /* 3. NO SIGNAL */
+        #nosignal {
+            background: #111;
+            font-size: 48px;
+            font-weight: 600;
+            letter-spacing: 8px;
+            color: #333;
+            text-shadow: 0 0 10px #0f0;
+            animation: glitch 1s infinite;
+        }
+        @keyframes glitch {
+            0%, 100% { text-shadow: 0 0 10px #0f0; }
+            50% { text-shadow: 2px 2px 10px #f00, -2px -2px 10px #0ff; }
+        }
+
+        /* 5. ЛОГО */
+        #start {
+            background: #000;
+        }
+        #logo {
+            width: 180px;
+            height: 180px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="%230f0"/><text x="50" y="60" font-family="Arial" font-size="40" fill="%23000" text-anchor="middle">OS</text></svg>') center/contain no-repeat;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 7. ЮЗЕР */
+        #user {
+            background: #000;
+        }
+        #avatar {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: #0f0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            color: #000;
+            font-weight: bold;
+        }
+        #userName { font-size: 28px; margin-bottom: 30px; }
+        #loginBtn {
+            padding: 12px 40px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #loginBtn:hover { background: #0c0; }
+
+        /* === РАБОЧИЙ СТОЛ === */
+        #desktop {
+            background: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80') center/cover;
+        }
+        #taskbar {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            height: 48px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            z-index: 100;
+        }
+        #startBtn {
+            width: 40px; height: 40px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>') center/24px no-repeat;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #startBtn:hover { background-color: rgba(255,255,255,0.1); }
+
+        #startMenu {
+            position: fixed;
+            bottom: 56px; left: 8px;
+            width: 360px; height: 480px;
+            background: rgba(30,30,30,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: scale(0.9); opacity: 0;
+            transform-origin: bottom left;
+            transition: 0.2s ease;
+            pointer-events: none; /* ВАЖНО: блокируем клики при закрытии */
+        }
+        #startMenu.open {
+            transform: scale(1); opacity: 1;
+            pointer-events: auto; /* Разрешаем клики только при открытии */
+        }
+        .tile {
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            margin: 8px;
+            transition: 0.2s;
+        }
+        .tile:hover { background: #0f0; color: #000; transform: translateY(-4px); }
+
+        /* === ЗАВЕРШЕНИЕ РАБОТЫ === */
+        #shutdown {
+            background: #000;
+            flex-direction: column;
+        }
+        #shutdownLogo {
+            width: 120px;
+            height: 120px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="%230f0"/><text x="50" y="60" font-family="Arial" font-size="40" fill="%23000" text-anchor="middle">OS</text></svg>') center/contain no-repeat;
+            margin-bottom: 30px;
+        }
+        #shutdownText {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+        #shutdownDots {
+            font-size: 24px;
+            letter-spacing: 8px;
+        }
+        #shutdownDots span {
+            animation: dot 1.5s infinite;
+        }
+        #shutdownDots span:nth-child(1) { animation-delay: 0s; }
+        #shutdownDots span:nth-child(2) { animation-delay: 0.3s; }
+        #shutdownDots span:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes dot {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* === ПРИЛОЖЕНИЯ === */
+        .app-window {
+            position: fixed;
+            top: 15%; left: 15%; width: 70%; height: 70%;
+            background: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 16px 32px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            z-index: 200;
+        }
+        .app-window.open { display: flex; }
+        .win-title {
+            padding: 12px 16px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #444;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            cursor: move;
+        }
+        .close-btn { cursor: pointer; font-size: 20px; }
+
+        /* Калькулятор */
+        #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; }
+        .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; }
+        .calc-btn:hover { background: #555; }
+        .calc-btn.operator { background: #0a0; }
+        .calc-btn.operator:hover { background: #0c0; }
+
+        /* Блокнот */
+        #notepadText { flex: 1; padding: 16px; background: #000; color: #0f0; font-family: monospace; resize: none; border: none; outline: none; }
+    </style>
+</head>
+<body>
+
+<!-- 1. ЧЁРНЫЙ ЭКРАН -->
+<div id="blackscreen" class="screen active">
+    <button onclick="goTo('delay1')">Запустить</button>
+</div>
+
+<!-- 2. ЗАДЕРЖКА 2 СЕКУНДЫ -->
+<div id="delay1" class="screen"></div>
+
+<!-- 3. NO SIGNAL -->
+<div id="nosignal" class="screen">NO SIGNAL</div>
+
+<!-- 5. ЛОГО -->
+<div id="start" class="screen">
+    <div id="logo"></div>
+</div>
+
+<!-- 7. ЮЗЕР -->
+<div id="user" class="screen">
+    <div id="avatar">U</div>
+    <div id="userName">Гость</div>
+    <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
+</div>
+
+<!-- РАБОЧИЙ СТОЛ -->
+<div id="desktop" class="screen">
+    <div id="taskbar">
+        <div id="startBtn" onclick="toggleStartMenu()"></div>
+        <div style="flex:1"></div>
+        <div style="color:#aaa; font-size:12px;">12:00</div>
+    </div>
+
+    <!-- МЕНЮ ПУСК — КНОПКИ РАБОТАЮТ ТОЛЬКО ПРИ ОТКРЫТОМ МЕНЮ -->
+    <div id="startMenu">
+        <div style="padding:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div class="tile" onclick="if(isMenuOpen) openApp('calc')"><div>Калькулятор</div></div>
+            <div class="tile" onclick="if(isMenuOpen) openApp('notepad')"><div>Блокнот</div></div>
+            <div class="tile" onclick="if(isMenuOpen) goTo('shutdown')"><div>Выключить</div></div>
+        </div>
+    </div>
+
+    <!-- Калькулятор -->
+    <div id="calc" class="app-window">
+        <div class="win-title">Калькулятор <span class="close-btn" onclick="closeApp('calc')">x</span></div>
+        <div id="calcDisplay">0</div>
+        <div class="calc-grid">
+            <div class="calc-btn" onclick="calc('C')">C</div>
+            <div class="calc-btn" onclick="calc('±')">±</div>
+            <div class="calc-btn" onclick="calc('%')">%</div>
+            <div class="calc-btn operator" onclick="calc('/')">/</div>
+            <div class="calc-btn" onclick="calc('7')">7</div>
+            <div class="calc-btn" onclick="calc('8')">8</div>
+            <div class="calc-btn" onclick="calc('9')">9</div>
+            <div class="calc-btn operator" onclick="calc('*')">x</div>
+            <div class="calc-btn" onclick="calc('4')">4</div>
+            <div class="calc-btn" onclick="calc('5')">5</div>
+            <div class="calc-btn" onclick="calc('6')">6</div>
+            <div class="calc-btn operator" onclick="calc('-')">-</div>
+            <div class="calc-btn" onclick="calc('1')">1</div>
+            <div class="calc-btn" onclick="calc('2')">2</div>
+            <div class="calc-btn" onclick="calc('3')">3</div>
+            <div class="calc-btn operator" onclick="calc('+')">+</div>
+            <div class="calc-btn" style="grid-column:span 2;" onclick="calc('0')">0</div>
+            <div class="calc-btn" onclick="calc('.')">.</div>
+            <div class="calc-btn operator" onclick="calc('=')">=</div>
+        </div>
+    </div>
+
+    <!-- Блокнот -->
+    <div id="notepad" class="app-window">
+        <div class="win-title">Блокнот <span class="close-btn" onclick="closeApp('notepad')">x</span></div>
+        <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
+    </div>
+</div>
+
+<!-- ЗАВЕРШЕНИЕ РАБОТЫ -->
+<div id="shutdown" class="screen">
+    <div id="shutdownLogo"></div>
+    <div id="shutdownText">Завершение работы</div>
+    <div id="shutdownDots"><span>.</span><span>.</span><span>...</span></div>
+</div>
+
+<script>
+    let isMenuOpen = false;
+
+    // === НАВИГАЦИЯ ===
+    function goTo(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+
+        if (screenId === 'delay1') setTimeout(() => goTo('nosignal'), 2000);
+        if (screenId === 'nosignal') setTimeout(() => goTo('start'), 3000);
+        if (screenId === 'start') setTimeout(() => goTo('user'), 3000);
+        if (screenId === 'shutdown') setTimeout(() => goTo('blackscreen'), 5000);
+    }
+
+    // === ПУСК — ТОЛЬКО ПРИ ОТКРЫТОМ МЕНЮ ===
+    function toggleStartMenu() {
+        const menu = document.getElementById('startMenu');
+        isMenuOpen = !isMenuOpen;
+        menu.classList.toggle('open', isMenuOpen);
+    }
+
+    // === ПРИЛОЖЕНИЯ ===
+    function openApp(id) {
+        if (!isMenuOpen) return;
+        document.getElementById(id).classList.add('open');
+        toggleStartMenu();
+    }
+    function closeApp(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    // === КАЛЬКУЛЯТОР ===
+    let calcVal = '0', calcOp = '', calcPrev = '';
+    function calc(input) {
+        const display = document.getElementById('calcDisplay');
+        if (input === 'C') { calcVal = '0'; calcOp = ''; calcPrev = ''; }
+        else if (input === '=') {
+            if (calcOp && calcPrev) calcVal = eval(`${calcPrev}${calcOp}${calcVal}`).toString();
+            calcOp = ''; calcPrev = '';
+        }
+        else if (['+', '-', '*', '/'].includes(input)) {
+            calcPrev = calcVal; calcOp = input === '*' ? '*' : input;
+            calcVal = '0';
+        }
+        else {
+            calcVal = calcVal === '0' ? input : calcVal + input;
+        }
+        display.textContent = calcVal;
+    }
+</script>
+</body>
+</html>
