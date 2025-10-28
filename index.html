@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -167,7 +166,7 @@
         #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; border-bottom: 1px solid #444; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; flex: 1; }
         .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; font-size: 18px; }
-        .calc-btn:hover { background: #555; }
+        .calc-btn:hover{ background: #555; }
         .calc-btn.operator { background: #0a0; }
         .calc-btn.operator:hover { background: #0c0; }
         /* СЛОМАННЫЕ ШРИФТЫ */
@@ -219,6 +218,7 @@
     <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
     <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
     <button onclick="location.reload()">Перезагрузить</button>
+    <button onclick="goTo('cmd')">Восстановление</button>
 </div>
 <!-- CMD ЭКРАН -->
 <div id="cmd" class="screen">
@@ -251,7 +251,7 @@
                 <button onclick="closeApp('explorer')">×</button>
             </div>
         </div>
-        <div id="explorerPath">C:\</div>
+        <div id="explorerPath">Компьютер</div>
         <div id="explorerContent"></div>
         <div id="explorerActions" style="display:none;">
             <button onclick="deleteSelected()">Удалить</button>
@@ -345,7 +345,7 @@
             }
         }
     };
-    let currentPath = ['C:'];
+    let currentPath = [];
     let selectedFile = null;
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
@@ -495,7 +495,11 @@
                 win.style.width = s.width; win.style.height = s.height;
             }
         }
-        if (id === 'explorer') renderExplorer();
+        if (id === 'explorer') {
+            currentPath = [];
+            updatePath();
+            renderExplorer();
+        }
         updateTaskbar();
         bringToFront(id);
     }
@@ -553,35 +557,70 @@
     function renderExplorer() {
         const content = document.getElementById('explorerContent');
         content.innerHTML = '';
-        let currentDir = fs;
-        currentPath.forEach(p => currentDir = currentDir[p]);
-        for (let name in currentDir) {
-            if (systemState.deleted.includes(name)) continue;
-            const item = currentDir[name];
-            const div = document.createElement('div');
-            div.classList.add('file-item');
-            div.onclick = () => selectFile(name, div);
-            div.ondblclick = () => {
-                if (item.type === 'folder') {
-                    currentPath.push(name);
+        const isRoot = currentPath.length === 0;
+        let currentDir;
+        if (isRoot) {
+            // Показываем диски
+            Object.keys(fs).forEach(name => {
+                if (systemState.deleted.includes(name)) return;
+                const item = fs[name];
+                const div = document.createElement('div');
+                div.classList.add('file-item');
+                div.onclick = () => selectFile(name, div);
+                div.ondblclick = () => {
+                    currentPath = [name];
                     updatePath();
                     renderExplorer();
+                };
+                const icon = document.createElement('div');
+                icon.classList.add('file-icon');
+                icon.textContent = '💽'; // Иконка диска
+                const label = document.createElement('div');
+                label.classList.add('file-name');
+                label.textContent = `${name} (50 KB)`;
+                div.appendChild(icon);
+                div.appendChild(label);
+                content.appendChild(div);
+            });
+        } else {
+            currentDir = fs[currentPath[0]];
+            for (let i = 1; i < currentPath.length; i++) {
+                currentDir = currentDir[currentPath[i]];
+            }
+            for (let name in currentDir) {
+                if (systemState.deleted.includes(name)) continue;
+                const item = currentDir[name];
+                if (item.type !== 'folder' && item.type !== 'file') continue;
+                const div = document.createElement('div');
+                div.classList.add('file-item');
+                div.onclick = () => selectFile(name, div);
+                div.ondblclick = () => {
+                    if (item.type === 'folder') {
+                        currentPath.push(name);
+                        updatePath();
+                        renderExplorer();
+                    }
+                };
+                const icon = document.createElement('div');
+                icon.classList.add('file-icon');
+                icon.textContent = item.type === 'folder' ? '📁' : '📄';
+                const label = document.createElement('div');
+                label.classList.add('file-name');
+                let labelText = name;
+                if (name === 'HTML OS') {
+                    labelText += ' (30 KB)';
                 }
-            };
-            const icon = document.createElement('div');
-            icon.classList.add('file-icon');
-            icon.textContent = item.type === 'folder' ? '📁' : '📄';
-            const label = document.createElement('div');
-            label.classList.add('file-name');
-            label.textContent = name;
-            div.appendChild(icon);
-            div.appendChild(label);
-            content.appendChild(div);
+                label.textContent = labelText;
+                div.appendChild(icon);
+                div.appendChild(label);
+                content.appendChild(div);
+            }
         }
         document.getElementById('explorerActions').style.display = selectedFile ? 'flex' : 'none';
     }
     function updatePath() {
-        document.getElementById('explorerPath').textContent = currentPath.join('\\');
+        const pathElem = document.getElementById('explorerPath');
+        pathElem.textContent = currentPath.length === 0 ? 'Компьютер' : currentPath.join('\\\\');
     }
     function selectFile(name, div) {
         document.querySelectorAll('.file-item').forEach(d => d.classList.remove('selected'));
@@ -591,11 +630,19 @@
     }
     function deleteSelected() {
         if (!selectedFile) return;
-        let currentDir = fs;
-        currentPath.forEach(p => currentDir = currentDir[p]);
+        let currentDir;
+        if (currentPath.length === 0) {
+            currentDir = fs;
+        } else {
+            currentDir = fs[currentPath[0]];
+            for (let i = 1; i < currentPath.length; i++) {
+                currentDir = currentDir[currentPath[i]];
+            }
+        }
         const item = currentDir[selectedFile];
-        if (item.system) {
-            if (!confirm('Это системная папка. Удаление может сломать систему. Продолжить?')) return;
+        const isSystem = item.system || (currentPath.length === 0); // Диски системные
+        if (isSystem) {
+            if (!confirm('Это системная папка/диск. Удаление может сломать систему. Продолжить?')) return;
         }
         delete currentDir[selectedFile];
         systemState.deleted.push(selectedFile);
@@ -606,8 +653,15 @@
         if (!selectedFile) return;
         const newName = prompt('Новое имя:');
         if (!newName) return;
-        let currentDir = fs;
-        currentPath.forEach(p => currentDir = currentDir[p]);
+        let currentDir;
+        if (currentPath.length === 0) {
+            currentDir = fs;
+        } else {
+            currentDir = fs[currentPath[0]];
+            for (let i = 1; i < currentPath.length; i++) {
+                currentDir = currentDir[currentPath[i]];
+            }
+        }
         currentDir[newName] = currentDir[selectedFile];
         delete currentDir[selectedFile];
         selectedFile = null;
