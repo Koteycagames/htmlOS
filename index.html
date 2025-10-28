@@ -197,6 +197,27 @@
             background: none; border: none; color: #0f0; font-family: monospace;
             font-size: 16px; width: 100%; outline: none;
         }
+        /* WiFi Menu */
+        #wifiMenu {
+            position: fixed; bottom: 56px; right: 8px;
+            width: 300px; background: rgba(30,30,30,0.95);
+            backdrop-filter: blur(20px); border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: scale(0.9); opacity: 0; transform-origin: bottom right;
+            transition: 0.2s ease; pointer-events: none;
+            padding: 16px;
+        }
+        #wifiMenu.open {
+            transform: scale(1); opacity: 1; pointer-events: auto;
+        }
+        .wifi-item {
+            padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-bottom: 8px; cursor: pointer;
+        }
+        .wifi-item:hover { background: rgba(255,255,255,0.2); }
+        .wifi-item.connected { background: #0f0; color: #000; }
+        /* Browser */
+        #browserAddress { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; border: none; width: 100%; }
+        #browserContent { flex: 1; padding: 16px; background: #fff; color: #000; overflow: auto; }
     </style>
 </head>
 <body>
@@ -231,6 +252,7 @@
         <div id="startBtn" onclick="toggleStartMenu()"></div>
         <div id="taskbar-apps"></div>
         <div style="flex:1"></div>
+        <div id="wifiBtn" onclick="toggleWifiMenu()" style="width: 40px; height: 40px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M12 21l-1-2a7 7 0 0114 0l-1 2a5 5 0 00-12 0zm-3-4a10 10 0 0121 0l-1 2a8 8 0 00-19 0l-1-2zm-3-4a13 13 0 0127 0l-1 2a11 11 0 00-25 0l-1-2z"/></svg>') center/24px no-repeat; border-radius: 8px; cursor: pointer; margin-right: 8px;"></div>
         <div style="color:#aaa; font-size:12px;" id="clock">12:00</div>
     </div>
     <div id="startMenu">
@@ -238,6 +260,7 @@
             <div class="tile" onclick="openApp('explorer')">Проводник</div>
             <div class="tile" onclick="openApp('calc')">Калькулятор</div>
             <div class="tile" onclick="openApp('notepad')">Блокнот</div>
+            <div class="tile" onclick="openApp('browser')">Браузер</div>
             <div class="tile" onclick="goTo('shutdown')">Выключить</div>
         </div>
     </div>
@@ -303,6 +326,19 @@
         </div>
         <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
     </div>
+    <!-- БРАУЗЕР -->
+    <div id="browser" class="app-window" style="top:12%; left:12%; width:800px; height:600px;">
+        <div class="win-title" onmousedown="dragStart(event, 'browser')">
+            <span>Браузер</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('browser')">–</button>
+                <button onclick="toggleMaximize('browser')">□</button>
+                <button onclick="closeApp('browser')">×</button>
+            </div>
+        </div>
+        <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
+        <div id="browserContent">Добро пожаловать в браузер. Введите URL и нажмите Enter.</div>
+    </div>
 </div>
 <!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
@@ -310,8 +346,22 @@
     <div id="shutdownText">Завершение работы</div>
     <div id="shutdownDots"><span>.</span><span>.</span><span>.</span></div>
 </div>
+<!-- WiFi MENU -->
+<div id="wifiMenu">
+    <div class="wifi-item" onclick="connectWifi('Бомж вай фай')">Бомж вай фай (без пароля)</div>
+    <div class="wifi-item" onclick="connectWifi('Средний вайфай')">Средний вайфай (пароль: 123)</div>
+    <div class="wifi-item" onclick="connectWifi('Ultra fast')">Ultra fast (пароль: 111)</div>
+</div>
 <script>
     let isMenuOpen = false;
+    let isWifiOpen = false;
+    let connected = false;
+    let currentNetwork = '';
+    const networks = {
+        'Бомж вай фай': { password: '' },
+        'Средний вайфай': { password: '123' },
+        'Ultra fast': { password: '111' }
+    };
     const minimizedApps = {};
     const windowStates = {};
     let currentUser = "Гость";
@@ -349,6 +399,7 @@
     let selectedFile = null;
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
+    const diskTotals = { 'C:': 100000 }; // Total in KB, e.g., 100 GB = 100000000 KB, but simplified to 100000 KB for demo
     // === ПРОВЕРКА ЦЕЛОСТНОСТИ ===
     function checkSystemIntegrity() {
         if (systemState.deleted.includes('Fonts')) {
@@ -477,9 +528,37 @@
         isMenuOpen = !isMenuOpen;
         menu.classList.toggle('open', isMenuOpen);
     }
+    // === WiFi ===
+    function toggleWifiMenu() {
+        const menu = document.getElementById('wifiMenu');
+        isWifiOpen = !isWifiOpen;
+        menu.classList.toggle('open', isWifiOpen);
+        if (isWifiOpen) {
+            document.querySelectorAll('.wifi-item').forEach(item => item.classList.remove('connected'));
+            if (currentNetwork) {
+                const connectedItem = Array.from(document.querySelectorAll('.wifi-item')).find(item => item.textContent.includes(currentNetwork));
+                if (connectedItem) connectedItem.classList.add('connected');
+            }
+        }
+    }
+    function connectWifi(network) {
+        const net = networks[network];
+        let password = '';
+        if (net.password) {
+            password = prompt(`Введите пароль для ${network}:`);
+            if (password !== net.password) {
+                alert('Неверный пароль!');
+                return;
+            }
+        }
+        connected = true;
+        currentNetwork = network;
+        alert(`Подключено к ${network}!`);
+        toggleWifiMenu();
+    }
     // === ОКНА ===
     function openApp(id) {
-        if (systemState.deleted.includes('Programs')) {
+        if (systemState.deleted.includes('Programs') && id !== 'browser') { // Browser might be separate, but for consistency
             alert('Невозможно открыть приложение: папка Programs удалена.');
             return;
         }
@@ -499,6 +578,9 @@
             currentPath = [];
             updatePath();
             renderExplorer();
+        }
+        if (id === 'browser') {
+            document.getElementById('browserContent').innerHTML = 'Добро пожаловать в браузер. Введите URL и нажмите Enter.';
         }
         updateTaskbar();
         bringToFront(id);
@@ -554,6 +636,22 @@
         document.removeEventListener('mouseup', dragEnd);
     }
     // === ПРОВОДНИК ===
+    function calculateOccupied(diskName) {
+        // Simple calculation: count items * 10 KB or something
+        const disk = fs[diskName];
+        function countItems(obj) {
+            let count = 0;
+            for (let key in obj) {
+                if (systemState.deleted.includes(key)) continue;
+                count++;
+                if (obj[key].type === 'folder') {
+                    count += countItems(obj[key]);
+                }
+            }
+            return count;
+        }
+        return countItems(disk) * 10; // Arbitrary: 10 KB per item
+    }
     function renderExplorer() {
         const content = document.getElementById('explorerContent');
         content.innerHTML = '';
@@ -577,7 +675,9 @@
                 icon.textContent = '💽'; // Иконка диска
                 const label = document.createElement('div');
                 label.classList.add('file-name');
-                label.textContent = `${name} (50 KB)`;
+                const occupied = calculateOccupied(name);
+                const total = diskTotals[name] || 0;
+                label.textContent = `${name} (занято ${occupied} KB / всего ${total} KB)`;
                 div.appendChild(icon);
                 div.appendChild(label);
                 content.appendChild(div);
@@ -711,11 +811,22 @@
             case '/': return b !== 0 ? (a / b).toString() : 'Error';
         }
     }
+    // === БРАУЗЕР ===
+    function loadPage() {
+        const url = document.getElementById('browserAddress').value;
+        const content = document.getElementById('browserContent');
+        if (!connected) {
+            content.innerHTML = '<div style="text-align: center; padding: 20px; color: #f00;">Нет подключения к интернету</div>';
+        } else {
+            // Simulate loading a page (since no real internet)
+            content.innerHTML = `<div style="padding: 20px;">Загруженная страница: ${url}<br>Содержимое: Это симулированная страница для ${url}. Интернет подключен через ${currentNetwork}.</div>`;
+        }
+    }
     // === ПАНЕЛЬ ЗАДАЧ ===
     function updateTaskbar() {
         const apps = document.getElementById('taskbar-apps');
         apps.innerHTML = '';
-        ['explorer', 'calc', 'notepad'].forEach(id => {
+        ['explorer', 'calc', 'notepad', 'browser'].forEach(id => {
             if (document.getElementById(id).classList.contains('open') || minimizedApps[id]) {
                 const btn = document.createElement('div');
                 btn.classList.add('taskbar-app');
@@ -729,6 +840,9 @@
     document.addEventListener('click', e => {
         if (isMenuOpen && !document.getElementById('startMenu').contains(e.target) && !document.getElementById('startBtn').contains(e.target)) {
             toggleStartMenu();
+        }
+        if (isWifiOpen && !document.getElementById('wifiMenu').contains(e.target) && !document.getElementById('wifiBtn').contains(e.target)) {
+            toggleWifiMenu();
         }
     });
 </script>
