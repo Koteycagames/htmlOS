@@ -114,32 +114,50 @@
         }
         .win-controls button:hover { background: #666; }
 
-        #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; }
-        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; }
-        .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; }
-        .calc-btn:hover { background: #555; }
-        .calc-btn.operator { background: #0a0; }
-        .calc-btn.operator:hover { background: #0c0; }
-
-        #notepadText {
-            flex: 1; padding: 16px; background: #000; color: #0f0;
-            font-family: monospace; resize: none; border: none; outline: none;
+        /* ПРОВОДНИК */
+        #explorerPath { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; }
+        #explorerContent { flex: 1; padding: 16px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; }
+        .file-item {
+            text-align: center; cursor: pointer; padding: 8px; border-radius: 6px;
+            transition: 0.2s;
         }
+        .file-item:hover { background: rgba(0,255,0,0.1); }
+        .file-item.selected { background: #0f0; color: #000; }
+        .file-icon {
+            width: 48px; height: 48px; margin: 0 auto 8px;
+            background: #0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #000;
+        }
+        .file-name { font-size: 12px; word-break: break-all; }
 
+        #explorerActions {
+            padding: 8px; background: #2d2d2d; display: flex; gap: 8px; justify-content: center;
+            border-top: 1px solid #444;
+        }
+        #explorerActions button {
+            padding: 6px 12px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;
+        }
+        #explorerActions button:hover { background: #666; }
+
+        /* ПАНЕЛЬ ЗАДАЧ — СПРАВА ОТ ПУСК */
+        #taskbar-apps {
+            display: flex; gap: 4px; margin-left: 8px; flex: 1; justify-content: flex-start;
+            overflow-x: auto; max-width: calc(100% - 160px);
+        }
         .taskbar-app {
-            margin: 0 4px; padding: 0 12px; height: 32px;
+            min-width: 120px; padding: 0 12px; height: 32px;
             background: rgba(255,255,255,0.1); color: #fff;
             border-radius: 6px; display: flex; align-items: center;
-            cursor: pointer; font-size: 13px;
+            justify-content: center; cursor: pointer; font-size: 13px;
+            white-space: nowrap;
         }
         .taskbar-app:hover { background: rgba(255,255,255,0.2); }
 
-        /* ВЫКЛЮЧЕНИЕ — ВЕРНУЛ ЛОГО И АНИМАЦИЮ */
+        /* ВЫКЛЮЧЕНИЕ */
         #shutdownLogo {
             width: 120px; height: 120px;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="%230f0"/><text x="50" y="60" font-family="Arial" font-size="40" fill="%23000" text-anchor="middle">OS</text></svg>') center/contain no-repeat;
-            margin-bottom: 30px;
-            animation: pulse 1.5s infinite;
+            margin-bottom: 30px; animation: pulse 1.5s infinite;
         }
         #shutdownText { font-size: 28px; margin-bottom: 10px; }
         #shutdownDots { font-size: 24px; letter-spacing: 8px; }
@@ -179,9 +197,28 @@
 
     <div id="startMenu">
         <div style="padding:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div class="tile" onclick="openApp('explorer')">Проводник</div>
             <div class="tile" onclick="openApp('calc')">Калькулятор</div>
             <div class="tile" onclick="openApp('notepad')">Блокнот</div>
             <div class="tile" onclick="goTo('shutdown')">Выключить</div>
+        </div>
+    </div>
+
+    <!-- ПРОВОДНИК -->
+    <div id="explorer" class="app-window" style="top:10%; left:10%; width:700px; height:500px;">
+        <div class="win-title" onmousedown="dragStart(event, 'explorer')">
+            <span>Проводник</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('explorer')">–</button>
+                <button onclick="toggleMaximize('explorer')">□</button>
+                <button onclick="closeApp('explorer')">×</button>
+            </div>
+        </div>
+        <div id="explorerPath">C:\</div>
+        <div id="explorerContent"></div>
+        <div id="explorerActions" style="display:none;">
+            <button onclick="deleteSelected()">Удалить</button>
+            <button onclick="renameSelected()">Переименовать</button>
         </div>
     </div>
 
@@ -233,7 +270,7 @@
     </div>
 </div>
 
-<!-- ВЫКЛЮЧЕНИЕ — С ЛОГО И АНИМАЦИЕЙ -->
+<!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
     <div id="shutdownLogo"></div>
     <div id="shutdownText">Завершение работы</div>
@@ -242,8 +279,31 @@
 
 <script>
     let isMenuOpen = false;
-    const minimizedApps = {};  // { id: true }
-    const windowStates = {};   // Сохраняем позицию/размер при свёртывании
+    const minimizedApps = {};
+    const windowStates = {};
+    let currentUser = "Гость";
+
+    // === ФАЙЛОВАЯ СИСТЕМА ===
+    const fs = {
+        'C:': {
+            type: 'disk',
+            'HTML OS': { type: 'folder', system: true },
+            'Users': {
+                type: 'folder',
+                system: true,
+                [currentUser]: {
+                    type: 'folder',
+                    'Загрузки': { type: 'folder' },
+                    'Документы': { type: 'folder' },
+                    'Картинки': { type: 'folder' },
+                    'Видео': { type: 'folder' }
+                }
+            }
+        }
+    };
+
+    let currentPath = ['C:'];
+    let selectedFile = null;
 
     // === НАВИГАЦИЯ ===
     function goTo(screenId) {
@@ -269,112 +329,151 @@
         menu.classList.toggle('open', isMenuOpen);
     }
 
-    // === ОТКРЫТЬ ПРИЛОЖЕНИЕ ===
+    // === ОКНА ===
     function openApp(id) {
-        if (!isMenuOpen) return;
+        if (!isMenuOpen && !minimizedApps[id]) return;
         const win = document.getElementById(id);
         win.classList.add('open');
         win.classList.remove('maximized');
-
-        // Восстанавливаем состояние, если было свёрнуто
         if (minimizedApps[id]) {
             delete minimizedApps[id];
             if (windowStates[id]) {
-                const state = windowStates[id];
-                win.style.top = state.top;
-                win.style.left = state.left;
-                win.style.width = state.width;
-                win.style.height = state.height;
+                const s = windowStates[id];
+                win.style.top = s.top; win.style.left = s.left;
+                win.style.width = s.width; win.style.height = s.height;
             }
         }
-
+        if (id === 'explorer') renderExplorer();
         updateTaskbar();
-        toggleStartMenu();
+        if (!isMenuOpen) toggleStartMenu();
         bringToFront(id);
     }
 
-    // === ЗАКРЫТЬ ===
     function closeApp(id) {
         const win = document.getElementById(id);
         win.classList.remove('open', 'maximized');
-        delete minimizedApps[id];
-        delete windowStates[id];
+        delete minimizedApps[id]; delete windowStates[id];
         updateTaskbar();
     }
 
-    // === СВЕРНУТЬ ===
     function minimizeApp(id) {
         const win = document.getElementById(id);
-        // Сохраняем текущее положение и размер
-        windowStates[id] = {
-            top: win.style.top,
-            left: win.style.left,
-            width: win.style.width,
-            height: win.style.height
-        };
+        windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
         win.classList.remove('open');
         minimizedApps[id] = true;
         updateTaskbar();
     }
 
-    // === МАКСИМИЗИРОВАТЬ ===
     function toggleMaximize(id) {
         const win = document.getElementById(id);
-        win.classList.toggle('maximized');
-        if (!win.classList.contains('maximized') && windowStates[id]) {
-            const s = windowStates[id];
-            win.style.top = s.top; win.style.left = s.left;
-            win.style.width = s.width; win.style.height = s.height;
+        if (win.classList.contains('maximized')) {
+            win.classList.remove('maximized');
+            if (windowStates[id]) {
+                const s = windowStates[id];
+                win.style.top = s.top; win.style.left = s.left;
+                win.style.width = s.width; win.style.height = s.height;
+            }
+        } else {
+            windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
+            win.classList.add('maximized');
         }
     }
 
-    // === ПЕРЕТАСКИВАНИЕ ===
-    let dragData = null;
     function dragStart(e, id) {
         if (e.target.closest('.win-controls')) return;
         const win = document.getElementById(id);
         if (win.classList.contains('maximized')) return;
-
         const rect = win.getBoundingClientRect();
-        dragData = { id, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top };
-
+        const dragData = { id, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top };
         function onMove(e) {
-            if (!dragData) return;
             const x = e.clientX - dragData.offsetX;
             const y = e.clientY - dragData.offsetY;
-            const win = document.getElementById(dragData.id);
-            win.style.left = x + 'px';
-            win.style.top = y + 'px';
+            win.style.left = x + 'px'; win.style.top = y + 'px';
         }
-
-        function onUp() {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            dragData = null;
-        }
-
+        function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
         bringToFront(id);
     }
 
-    // === НА ПЕРЕДНИЙ ПЛАН ===
     function bringToFront(id) {
         document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = '200');
         document.getElementById(id).style.zIndex = '201';
     }
 
-    // === ПАНЕЛЬ ЗАДАЧ ===
     function updateTaskbar() {
         const container = document.getElementById('taskbar-apps');
         container.innerHTML = '';
         Object.keys(minimizedApps).forEach(id => {
             const btn = document.createElement('div');
             btn.className = 'taskbar-app';
-            btn.textContent = id === 'calc' ? 'Калькулятор' : 'Блокнот';
-            btn.onclick = () => openApp(id);  // Теперь открывает правильно
+            btn.textContent = {explorer: 'Проводник', calc: 'Калькулятор', notepad: 'Блокнот'}[id];
+            btn.onclick = (e) => { e.stopPropagation(); openApp(id); };
             container.appendChild(btn);
         });
+    }
+
+    // === ПРОВОДНИК ===
+    function renderExplorer() {
+        const content = document.getElementById('explorerContent');
+        const path = document.getElementById('explorerPath');
+        path.textContent = currentPath.join('\\') + '\\';
+        content.innerHTML = '';
+        selectedFile = null;
+        document.getElementById('explorerActions').style.display = 'none';
+
+        let current = fs;
+        for (const p of currentPath) current = current[p];
+
+        Object.keys(current).forEach(name => {
+            const item = current[name];
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<div class="file-icon">${item.type === 'folder' ? '📁' : '📄'}</div><div class="file-name">${name}</div>`;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+                div.classList.add('selected');
+                selectedFile = { name, path: [...currentPath, name] };
+                document.getElementById('explorerActions').style.display = 'flex';
+            };
+            div.ondblclick = () => {
+                if (item.type === 'folder') {
+                    currentPath.push(name);
+                    renderExplorer();
+                }
+            };
+            content.appendChild(div);
+        });
+
+        // Кнопка "Назад"
+        if (currentPath.length > 1) {
+            const back = document.createElement('div');
+            back.className = 'file-item';
+            back.innerHTML = `<div class="file-icon">⬅</div><div class="file-name">Назад</div>`;
+            back.onclick = () => { currentPath.pop(); renderExplorer(); };
+            content.insertBefore(back, content.firstChild);
+        }
+    }
+
+    function deleteSelected() {
+        if (!selectedFile) return;
+        let current = fs;
+        for (let i = 0; i < selectedFile.path.length - 1; i++) current = current[selectedFile.path[i]];
+        delete current[selectedFile.path[selectedFile.path.length - 1]];
+        renderExplorer();
+    }
+
+    function renameSelected() {
+        if (!selectedFile) return;
+        const newName = prompt('Новое имя:', selectedFile.name);
+        if (newName && newName !== selectedFile.name) {
+            let current = fs;
+            for (let i = 0; i < selectedFile.path.length - 1; i++) current = current[selectedFile.path[i]];
+            current[newName] = current[selectedFile.name];
+            delete current[selectedFile.name];
+            renderExplorer();
+        }
     }
 
     // === КАЛЬКУЛЯТОР ===
@@ -384,25 +483,21 @@
         if (input === 'C') { calcVal = '0'; calcOp = ''; calcPrev = ''; }
         else if (input === '=') {
             if (calcOp && calcPrev) {
-                try {
-                    calcVal = eval(`${calcPrev}${calcOp === '×' ? '*' : calcOp}${calcVal}`).toString();
-                } catch { calcVal = 'Ошибка'; }
+                try { calcVal = eval(`${calcPrev}${calcOp === '×' ? '*' : calcOp}${calcVal}`).toString(); }
+                catch { calcVal = 'Ошибка'; }
             }
             calcOp = ''; calcPrev = '';
         }
         else if (['+', '-', '*', '/', '×'].includes(input)) {
-            calcPrev = calcVal; calcOp = input === '×' ? '*' : input;
-            calcVal = '0';
+            calcPrev = calcVal; calcOp = input === '×' ? '*' : input; calcVal = '0';
         }
-        else {
-            calcVal = calcVal === '0' ? input : calcVal + input;
-        }
+        else { calcVal = calcVal === '0' ? input : calcVal + input; }
         display.textContent = calcVal;
     }
 
     // Закрытие меню
     document.addEventListener('click', e => {
-        if (!e.target.closest('#startBtn') && !e.target.closest('#startMenu')) {
+        if (!e.target.closest('#startBtn') && !e.target.closest('#startMenu') && !e.target.closest('.taskbar-app')) {
             isMenuOpen = false;
             document.getElementById('startMenu').classList.remove('open');
         }
