@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HTML OS</title>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body, html { height: 100%; overflow: hidden; background: #000; color: #fff; }
+        body, html { height: 100%; overflow: hidden; background: #000; color: #fff; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
         .screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -19,8 +19,9 @@
         #blackscreen button {
             padding: 16px 32px; font-size: 18px; background: #0f0; color: #000;
             border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+            touch-action: manipulation;
         }
-        #blackscreen button:hover { background: #0c0; }
+        #blackscreen button:active { background: #0a0; transform: scale(0.95); }
 
         #nosignal {
             background: #111; font-size: 48px; font-weight: 600;
@@ -50,9 +51,9 @@
         #userName { font-size: 28px; margin-bottom: 30px; }
         #loginBtn {
             padding: 12px 40px; background: #0f0; color: #000; border: none;
-            border-radius: 8px; font-size: 18px; cursor: pointer;
+            border-radius: 8px; font-size: 18px; cursor: pointer; touch-action: manipulation;
         }
-        #loginBtn:hover { background: #0c0; }
+        #loginBtn:active { background: #0a0; transform: scale(0.95); }
 
         /* РАБОЧИЙ СТОЛ */
         #desktop {
@@ -66,9 +67,9 @@
         #startBtn {
             width: 40px; height: 40px;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>') center/24px no-repeat;
-            border-radius: 8px; cursor: pointer;
+            border-radius: 8px; cursor: pointer; touch-action: manipulation;
         }
-        #startBtn:hover { background-color: rgba(255,255,255,0.1); }
+        #startBtn:active { background-color: rgba(255,255,255,0.2); }
 
         #startMenu {
             position: fixed; bottom: 56px; left: 8px;
@@ -87,14 +88,14 @@
             justify-content: center; align-items: center; cursor: pointer;
             margin: 8px; transition: 0.2s;
         }
-        .tile:hover { background: #0f0; color: #000; transform: translateY(-4px); }
+        .tile:active { background: #0f0; color: #000; transform: translateY(-4px); }
 
         /* ОКНА */
         .app-window {
             position: fixed; background: #1e1e1e; border-radius: 12px;
             box-shadow: 0 16px 32px rgba(0,0,0,0.5); display: none;
             flex-direction: column; z-index: 200; resize: both; overflow: hidden;
-            min-width: 300px; min-height: 200px;
+            min-width: 280px; min-height: 180px; touch-action: manipulation;
         }
         .app-window.open { display: flex; }
         .app-window.maximized {
@@ -112,7 +113,7 @@
             background: #444; color: #fff; border: none;
             border-radius: 4px; font-size: 14px; cursor: pointer;
         }
-        .win-controls button:hover { background: #666; }
+        .win-controls button:active { background: #666; }
 
         /* ПРОВОДНИК */
         #explorerPath { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; }
@@ -121,7 +122,7 @@
             text-align: center; cursor: pointer; padding: 8px; border-radius: 6px;
             transition: 0.2s;
         }
-        .file-item:hover { background: rgba(0,255,0,0.1); }
+        .file-item:active { background: rgba(0,255,0,0.3); }
         .file-item.selected { background: #0f0; color: #000; }
         .file-icon {
             width: 48px; height: 48px; margin: 0 auto 8px;
@@ -137,7 +138,7 @@
         #explorerActions button {
             padding: 6px 12px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;
         }
-        #explorerActions button:hover { background: #666; }
+        #explorerActions button:active { background: #666; }
 
         /* ПАНЕЛЬ ЗАДАЧ */
         #taskbar-apps {
@@ -151,7 +152,7 @@
             justify-content: center; cursor: pointer; font-size: 13px;
             white-space: nowrap;
         }
-        .taskbar-app:hover { background: rgba(255,255,255,0.2); }
+        .taskbar-app:active { background: rgba(255,255,255,0.3); }
 
         /* ВЫКЛЮЧЕНИЕ */
         #shutdownLogo {
@@ -181,9 +182,9 @@
         #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; border-bottom: 1px solid #444; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; flex: 1; }
         .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; font-size: 18px; }
-        .calc-btn:hover { background: #555; }
+        .calc-btn:active { background: #555; }
         .calc-btn.operator { background: #0a0; }
-        .calc-btn.operator:hover { background: #0c0; }
+        .calc-btn.operator:active { background: #0c0; }
 
         /* ЭФФЕКТЫ */
         .broken-fonts * { font-family: monospace !important; color: #f00 !important; font-style: italic; }
@@ -194,6 +195,7 @@
             background: #0000ff; color: #fff; font-size: 24px; text-align: center;
         }
         #bsod-screen p { margin: 20px; }
+        #bsod-screen button { background: #fff; color: #00f; padding: 10px 20px; border: none; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -215,7 +217,6 @@
 <div id="bsod-screen" class="screen">
     <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
     <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
-    <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
     <button onclick="location.reload()">Перезагрузить</button>
 </div>
 
@@ -238,8 +239,8 @@
     </div>
 
     <!-- ПРОВОДНИК -->
-    <div id="explorer" class="app-window" style="top:10%; left:10%; width:700px; height:500px;">
-        <div class="win-title" onmousedown="dragStart(event, 'explorer')">
+    <div id="explorer" class="app-window" style="top:5%; left:5%; width:90%; height:80%;">
+        <div class="win-title" onpointerdown="dragStart(event, 'explorer')">
             <span>Проводник</span>
             <div class="win-controls">
                 <button onclick="minimizeApp('explorer')">–</button>
@@ -256,8 +257,8 @@
     </div>
 
     <!-- КАЛЬКУЛЯТОР -->
-    <div id="calc" class="app-window" style="top:15%; left:15%; width:320px; height:420px;">
-        <div class="win-title" onmousedown="dragStart(event, 'calc')">
+    <div id="calc" class="app-window" style="top:10%; left:10%; width:320px; height:420px;">
+        <div class="win-title" onpointerdown="dragStart(event, 'calc')">
             <span>Калькулятор</span>
             <div class="win-controls">
                 <button onclick="minimizeApp('calc')">–</button>
@@ -290,8 +291,8 @@
     </div>
 
     <!-- БЛОКНОТ -->
-    <div id="notepad" class="app-window" style="top:18%; left:20%; width:500px; height:380px;">
-        <div class="win-title" onmousedown="dragStart(event, 'notepad')">
+    <div id="notepad" class="app-window" style="top:15%; left:15%; width:500px; height:380px;">
+        <div class="win-title" onpointerdown="dragStart(event, 'notepad')">
             <span>Блокнот</span>
             <div class="win-controls">
                 <button onclick="minimizeApp('notepad')">–</button>
@@ -307,13 +308,17 @@
 <div id="shutdown" class="screen">
     <div id="shutdownLogo"></div>
     <div id="shutdownText">Завершение работы</div>
-    <div id="shutdownDots"><span>.</span><span>.</span><span>...</span></div>
+    <div id="shutdownDots"><span>.</span><span>.</span><span>.</span></div>
 </div>
 
 <script>
     let isMenuOpen = false;
     const minimizedApps = {};
     const windowStates = {};
+    let currentPath = ['C:'];
+    let selectedFile = null;
+    const stateKey = 'html_os_state';
+    let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
     let currentUser = "Гость";
 
     // === ФАЙЛОВАЯ СИСТЕМА ===
@@ -345,48 +350,26 @@
         }
     };
 
-    let currentPath = ['C:'];
-    let selectedFile = null;
-    const stateKey = 'html_os_state';
-    let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
-
-    // === ПРИМЕНЕНИЕ ЭФФЕКТОВ УДАЛЕНИЯ ===
+    // === ЭФФЕКТЫ УДАЛЕНИЯ ===
     function applySystemEffects() {
         const deleted = systemState.deleted;
-
-        if (deleted.includes('Fonts')) {
-            document.body.classList.add('broken-fonts');
-        }
-        if (deleted.includes('Boot')) {
-            goTo('bsod-screen');
-            return;
-        }
+        if (deleted.includes('Fonts')) document.body.classList.add('broken-fonts');
+        if (deleted.includes('Boot')) { goTo('bsod-screen'); return; }
         if (deleted.includes('System')) {
             setTimeout(() => {
-                if (!fs['C:']['HTML OS']['Temp']) fs['C:']['HTML OS']['Temp'] = { type: 'folder' };
-                for (let i = 1; i <= 10; i++) {
-                    fs['C:']['HTML OS']['Temp'][`crash_${i}.tmp`] = { type: 'file' };
-                }
+                const temp = fs['C:']['HTML OS']['Temp'] = fs['C:']['HTML OS']['Temp'] || { type: 'folder' };
+                for (let i = 1; i <= 10; i++) temp[`crash_${i}.tmp`] = { type: 'file' };
                 alert('СИСТЕМНЫЙ СБОЙ: Ядро повреждено. Создано 10 временных файлов.');
             }, 3000);
         }
-        if (deleted.includes('Programs')) {
-            alert('ПРОГРАММЫ НЕДОСТУПНЫ: Приложения удалены из системы.');
-        }
+        if (deleted.includes('Programs')) alert('ПРОГРАММЫ НЕДОСТУПНЫ: Приложения удалены.');
         if (deleted.includes('Drivers')) {
             document.body.style.animation = 'flicker 0.3s infinite';
             setTimeout(() => alert('ДРАЙВЕРЫ ОТСУТСТВУЮТ: Графика и звук не работают.'), 1000);
         }
-        if (deleted.includes('Config')) {
-            alert('НАСТРОЙКИ СБРОШЕНЫ: Все параметры удалены.');
-            localStorage.clear();
-        }
-        if (deleted.includes('Security')) {
-            alert('СИСТЕМА УЯЗВИМА: Файрвол отключен.');
-        }
-        if (deleted.includes('Logs')) {
-            alert('ЛОГИ УДАЛЕНЫ: Ошибки не записываются.');
-        }
+        if (deleted.includes('Config')) { alert('НАСТРОЙКИ СБРОШЕНЫ.'); localStorage.clear(); }
+        if (deleted.includes('Security')) alert('СИСТЕМА УЯЗВИМА: Файрвол отключен.');
+        if (deleted.includes('Logs')) alert('ЛОГИ УДАЛЕНЫ: Ошибки не записываются.');
     }
 
     // === НАВИГАЦИЯ ===
@@ -448,5 +431,4 @@
     }
 
     function minimizeApp(id) {
-        const win = document.getElementById(id);
-        windowStates[id] = { top: win.style.top, left: win.style
+        const win = document.getElement
