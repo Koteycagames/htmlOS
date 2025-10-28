@@ -184,6 +184,19 @@
         .calc-btn:hover { background: #555; }
         .calc-btn.operator { background: #0a0; }
         .calc-btn.operator:hover { background: #0c0; }
+
+        /* СЛОМАННЫЕ ШРИФТЫ */
+        .broken-fonts * { font-family: monospace !important; font-style: italic; color: #f00 !important; }
+
+        /* BSOD */
+        #bsod-screen {
+            background: #0000ff; color: #fff; font-size: 24px; text-align: center;
+        }
+        #bsod-screen p { margin: 20px; }
+
+        /* БЕСКОНЕЧНЫЙ ЗАПУСК */
+        #infinite-boot { animation: infinite-pulse 2s infinite; }
+        @keyframes infinite-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -199,6 +212,14 @@
     <div id="avatar">U</div>
     <div id="userName">Гость</div>
     <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
+</div>
+
+<!-- BSOD ЭКРАН -->
+<div id="bsod-screen" class="screen" style="display: none;">
+    <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
+    <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
+    <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
+    <button onclick="location.reload()">Перезагрузить</button>
 </div>
 
 <!-- РАБОЧИЙ СТОЛ -->
@@ -237,7 +258,7 @@
         </div>
     </div>
 
-    <!-- КАЛЬКУЛЯТОР — ИСПРАВЛЕНО ПОЗИЦИЯ И СТИЛИ -->
+    <!-- КАЛЬКУЛЯТОР -->
     <div id="calc" class="app-window" style="top:15%; left:15%; width:320px; height:420px;">
         <div class="win-title" onmousedown="dragStart(event, 'calc')">
             <span>Калькулятор</span>
@@ -271,7 +292,7 @@
         </div>
     </div>
 
-    <!-- БЛОКНОТ — ИСПРАВЛЕНО ВИД -->
+    <!-- БЛОКНОТ -->
     <div id="notepad" class="app-window" style="top:18%; left:20%; width:500px; height:380px;">
         <div class="win-title" onmousedown="dragStart(event, 'notepad')">
             <span>Блокнот</span>
@@ -298,10 +319,23 @@
     const windowStates = {};
     let currentUser = "Гость";
 
-    // === ФАЙЛОВАЯ СИСТЕМА ===
+    // === ФАЙЛОВАЯ СИСТЕМА С ДОБАВЛЕННЫМИ ПАПКАМИ ===
     const fs = {
         'C:': {
-            'HTML OS': { type: 'folder', system: true },
+            'HTML OS': {
+                type: 'folder',
+                system: true,
+                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file' }, 'SegoeUI.ttf': { type: 'file' } },
+                'System': { type: 'folder', 'Kernel.dll': { type: 'file' }, 'Registry.reg': { type: 'file' } },
+                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file' }, 'Config.sys': { type: 'file' } },
+                'Programs': { type: 'folder', 'Calc.exe': { type: 'file' }, 'Notepad.exe': { type: 'file' } },
+                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file' }, 'Audio.drv': { type: 'file' } },
+                'Config': { type: 'folder', 'Settings.ini': { type: 'file' }, 'UserPrefs.cfg': { type: 'file' } },
+                'Temp': { type: 'folder' },
+                'Logs': { type: 'folder', 'System.log': { type: 'file' } },
+                'Resources': { type: 'folder', 'Icons': { type: 'folder' } },
+                'Security': { type: 'folder', 'Firewall.rules': { type: 'file' } }
+            },
             'Users': {
                 type: 'folder',
                 system: true,
@@ -319,6 +353,40 @@
     let currentPath = ['C:'];
     let selectedFile = null;
 
+    // === СОХРАНЕНИЕ СОСТОЯНИЯ В LOCALSTORAGE ===
+    const stateKey = 'html_os_state';
+    let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
+
+    // === ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ===
+    function checkSystemIntegrity() {
+        if (systemState.deleted.includes('Fonts')) {
+            document.body.classList.add('broken-fonts');
+        }
+        if (systemState.deleted.includes('Boot')) {
+            document.getElementById('boot-screen').style.display = 'none';
+            document.getElementById('bsod-screen').style.display = 'flex';
+            return false;
+        }
+        if (systemState.deleted.includes('System')) {
+            // Бесконечный запуск
+            document.getElementById('boot-screen').classList.add('infinite-boot');
+            setTimeout(() => {
+                alert('Ошибка: Временные файлы созданы. Система не может загрузиться.');
+                createTempFiles();
+            }, 5000);
+            return false;
+        }
+        return true;
+    }
+
+    // === СОЗДАНИЕ TEMP ФАЙЛОВ ===
+    function createTempFiles() {
+        let tempPath = fs['C:']['HTML OS']['Temp'] = fs['C:']['HTML OS']['Temp'] || { type: 'folder' };
+        for (let i = 1; i <= 5; i++) {
+            tempPath[`tmp${i}.tmp`] = { type: 'file' };
+        }
+    }
+
     // === НАВИГАЦИЯ ===
     function goTo(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -327,7 +395,12 @@
         if (screenId === 'delay1') setTimeout(() => goTo('nosignal'), 2000);
         if (screenId === 'nosignal') setTimeout(() => goTo('start'), 3000);
         if (screenId === 'start') setTimeout(() => goTo('user'), 3000);
-        if (screenId === 'shutdown') setTimeout(() => goTo('blackscreen'), 5000);
+        if (screenId === 'shutdown') {
+            setTimeout(() => {
+                localStorage.setItem(stateKey, JSON.stringify(systemState));
+                goTo('blackscreen');
+            }, 5000);
+        }
     }
 
     // === ЧАСЫ ===
@@ -426,7 +499,7 @@
         });
     }
 
-    // === ПРОВОДНИК — ИСПРАВЛЕНО 'TYPE' ===
+    // === ПРОВОДНИК ===
     function renderExplorer() {
         const content = document.getElementById('explorerContent');
         const path = document.getElementById('explorerPath');
@@ -439,7 +512,7 @@
         for (const p of currentPath) current = current[p] || {};
 
         Object.keys(current).forEach(name => {
-            if (name === 'type' || name === 'system') return; // Скрываем 'type' и 'system'
+            if (name === 'type' || name === 'system') return;
             const item = current[name];
             const div = document.createElement('div');
             div.className = 'file-item';
@@ -474,7 +547,27 @@
         if (!selectedFile) return;
         let current = fs;
         for (let i = 0; i < selectedFile.path.length - 1; i++) current = current[selectedFile.path[i]];
-        delete current[selectedFile.path[selectedFile.path.length - 1]];
+        const deletedName = selectedFile.path[selectedFile.path.length - 1];
+        delete current[deletedName];
+
+        // Реалистичные последствия
+        if (deletedName === 'Fonts') {
+            systemState.deleted.push('Fonts');
+            alert('Шрифты удалены. Система теперь использует временные шрифты.');
+            document.body.classList.add('broken-fonts');
+        } else if (deletedName === 'Boot') {
+            systemState.deleted.push('Boot');
+            alert('Загрузочная папка удалена. При следующей загрузке система не запустится.');
+            createTempFiles();
+        } else if (deletedName === 'System') {
+            systemState.deleted.push('System');
+            alert('Системная папка удалена. Система создала временные файлы, но загрузка невозможна.');
+            createTempFiles();
+        } else if (deletedName.includes('.tmp')) {
+            alert('Временный файл удален, но система все равно повреждена.');
+        }
+
+        localStorage.setItem(stateKey, JSON.stringify(systemState));
         renderExplorer();
     }
 
@@ -516,6 +609,14 @@
             document.getElementById('startMenu').classList.remove('open');
         }
     });
+
+    // Инициализация
+    setTimeout(() => {
+        if (checkSystemIntegrity()) {
+            document.getElementById('boot-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+    }, 2000);
 </script>
 </body>
 </html>
