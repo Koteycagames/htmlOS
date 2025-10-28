@@ -8,20 +8,17 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body, html { height: 100%; overflow: hidden; background: #000; color: #fff; }
-
         .screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: none; flex-direction: column; justify-content: center; align-items: center;
         }
         .screen.active { display: flex; }
-
         /* ЭКРАНЫ */
         #blackscreen button {
             padding: 16px 32px; font-size: 18px; background: #0f0; color: #000;
             border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
         }
         #blackscreen button:hover { background: #0c0; }
-
         #nosignal {
             background: #111; font-size: 48px; font-weight: 600;
             letter-spacing: 8px; color: #333; text-shadow: 0 0 10px #0f0;
@@ -31,7 +28,6 @@
             0%, 100% { text-shadow: 0 0 10px #0f0; }
             50% { text-shadow: 2px 2px 10px #f00, -2px -2px 10px #0ff; }
         }
-
         #logo {
             width: 180px; height: 180px;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="%230f0"/><text x="50" y="60" font-family="Arial" font-size="40" fill="%23000" text-anchor="middle">OS</text></svg>') center/contain no-repeat;
@@ -41,7 +37,6 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
-
         #avatar {
             width: 120px; height: 120px; border-radius: 50%; background: #0f0;
             margin-bottom: 20px; display: flex; justify-content: center;
@@ -53,7 +48,6 @@
             border-radius: 8px; font-size: 18px; cursor: pointer;
         }
         #loginBtn:hover { background: #0c0; }
-
         /* РАБОЧИЙ СТОЛ */
         #desktop {
             background: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80') center/cover;
@@ -69,7 +63,6 @@
             border-radius: 8px; cursor: pointer;
         }
         #startBtn:hover { background-color: rgba(255,255,255,0.1); }
-
         #startMenu {
             position: fixed; bottom: 56px; left: 8px;
             width: 360px; height: 480px; background: rgba(30,30,30,0.95);
@@ -88,7 +81,6 @@
             margin: 8px; transition: 0.2s;
         }
         .tile:hover { background: #0f0; color: #000; transform: translateY(-4px); }
-
         /* ОКНА */
         .app-window {
             position: fixed; background: #1e1e1e; border-radius: 12px;
@@ -101,7 +93,6 @@
             top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
             border-radius: 0; resize: none;
         }
-
         .win-title {
             padding: 12px 16px; background: #2d2d2d; border-bottom: 1px solid #444;
             font-weight: 600; display: flex; justify-content: space-between;
@@ -113,7 +104,6 @@
             border-radius: 4px; font-size: 14px; cursor: pointer;
         }
         .win-controls button:hover { background: #666; }
-
         /* ПРОВОДНИК */
         #explorerPath { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; }
         #explorerContent { flex: 1; padding: 16px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; }
@@ -129,7 +119,6 @@
             font-size: 24px; color: #000;
         }
         .file-name { font-size: 12px; word-break: break-all; }
-
         #explorerActions {
             padding: 8px; background: #2d2d2d; display: flex; gap: 8px; justify-content: center;
             border-top: 1px solid #444;
@@ -138,7 +127,6 @@
             padding: 6px 12px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;
         }
         #explorerActions button:hover { background: #666; }
-
         /* ПАНЕЛЬ ЗАДАЧ */
         #taskbar-apps {
             display: flex; gap: 4px; margin-left: 8px; flex: 1; justify-content: flex-start;
@@ -152,7 +140,6 @@
             white-space: nowrap;
         }
         .taskbar-app:hover { background: rgba(255,255,255,0.2); }
-
         /* ВЫКЛЮЧЕНИЕ */
         #shutdownLogo {
             width: 120px; height: 120px;
@@ -169,14 +156,12 @@
             0%, 100% { opacity: 0.3; }
             50% { opacity: 1; }
         }
-
         /* БЛОКНОТ */
         #notepadText {
             flex: 1; padding: 16px; background: #000; color: #0f0;
             font-family: monospace; border: none; outline: none; resize: none;
             font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow: auto;
         }
-
         /* КАЛЬКУЛЯТОР */
         #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; border-bottom: 1px solid #444; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; flex: 1; }
@@ -184,23 +169,27 @@
         .calc-btn:hover { background: #555; }
         .calc-btn.operator { background: #0a0; }
         .calc-btn.operator:hover { background: #0c0; }
-
         /* СЛОМАННЫЕ ШРИФТЫ */
         .broken-fonts * { font-family: monospace !important; font-style: italic; color: #f00 !important; }
-
         /* BSOD */
         #bsod-screen {
             background: #0000ff; color: #fff; font-size: 24px; text-align: center; padding: 40px;
         }
         #bsod-screen p { margin: 20px; }
-
         /* БЕСКОНЕЧНЫЙ ЗАПУСК */
         #boot-screen { animation: infinite-pulse 2s infinite; }
         @keyframes infinite-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        /* ДОПОЛНИТЕЛЬНЫЕ ЭФФЕКТЫ ДЛЯ УДАЛЕНИЯ ПАПОК */
+        .no-programs .tile:not([onclick="goTo('shutdown')"]) { display: none; }
+        .broken-drivers #desktop { background: #000 !important; }
+        .broken-config body { filter: invert(1); }
+        .overflow-temp #explorerContent { overflow: hidden; }
+        .no-logs .win-title::after { content: " ERROR"; color: #f00; }
+        .no-resources .file-icon { background: none; font-size: 12px; }
+        .broken-security #explorerActions button:first-child { display: none; } /* Удаление без подтверждения, но для простоты скрываем кнопку удаления */
     </style>
 </head>
 <body>
-
 <!-- ЭКРАНЫ -->
 <div id="blackscreen" class="screen active">
     <button type="button" onclick="goTo('delay1')">Запустить</button>
@@ -213,7 +202,6 @@
     <div id="userName">Гость</div>
     <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
 </div>
-
 <!-- BSOD ЭКРАН -->
 <div id="bsod-screen" class="screen" style="display: none;">
     <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
@@ -221,7 +209,6 @@
     <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
     <button onclick="location.reload()">Перезагрузить</button>
 </div>
-
 <!-- РАБОЧИЙ СТОЛ -->
 <div id="desktop" class="screen">
     <div id="taskbar">
@@ -230,7 +217,6 @@
         <div style="flex:1"></div>
         <div style="color:#aaa; font-size:12px;" id="clock">12:00</div>
     </div>
-
     <div id="startMenu">
         <div style="padding:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
             <div class="tile" onclick="openApp('explorer')">Проводник</div>
@@ -239,7 +225,6 @@
             <div class="tile" onclick="goTo('shutdown')">Выключить</div>
         </div>
     </div>
-
     <!-- ПРОВОДНИК -->
     <div id="explorer" class="app-window" style="top:10%; left:10%; width:700px; height:500px;">
         <div class="win-title" onmousedown="dragStart(event, 'explorer')">
@@ -257,7 +242,6 @@
             <button onclick="renameSelected()">Переименовать</button>
         </div>
     </div>
-
     <!-- КАЛЬКУЛЯТОР -->
     <div id="calc" class="app-window" style="top:15%; left:15%; width:320px; height:420px;">
         <div class="win-title" onmousedown="dragStart(event, 'calc')">
@@ -291,7 +275,6 @@
             <div class="calc-btn operator" onclick="calc('=')">=</div>
         </div>
     </div>
-
     <!-- БЛОКНОТ -->
     <div id="notepad" class="app-window" style="top:18%; left:20%; width:500px; height:380px;">
         <div class="win-title" onmousedown="dragStart(event, 'notepad')">
@@ -305,20 +288,17 @@
         <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
     </div>
 </div>
-
 <!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
     <div id="shutdownLogo"></div>
     <div id="shutdownText">Завершение работы</div>
-    <div id="shutdownDots"><span>.</span><span>.</span><span>...</span></div>
+    <div id="shutdownDots"><span>.</span><span>.</span><span>.</span></div>
 </div>
-
 <script>
     let isMenuOpen = false;
     const minimizedApps = {};
     const windowStates = {};
     let currentUser = "Гость";
-
     // === ФАЙЛОВАЯ СИСТЕМА ===
     const fs = {
         'C:': {
@@ -349,12 +329,10 @@
             }
         }
     };
-
     let currentPath = ['C:'];
     let selectedFile = null;
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
-
     // === ПРОВЕРКА ЦЕЛОСТНОСТИ ===
     function checkSystemIntegrity() {
         if (systemState.deleted.includes('Fonts')) {
@@ -373,25 +351,56 @@
             }, 3000);
             return false;
         }
+        if (systemState.deleted.includes('Programs')) {
+            document.body.classList.add('no-programs');
+            alert('Программы недоступны: папка Programs удалена.');
+        }
+        if (systemState.deleted.includes('Drivers')) {
+            document.body.classList.add('broken-drivers');
+            alert('Драйверы повреждены: графика отключена.');
+        }
+        if (systemState.deleted.includes('Config')) {
+            document.body.classList.add('broken-config');
+            alert('Конфигурация повреждена: цвета инвертированы.');
+        }
+        if (systemState.deleted.includes('Temp')) {
+            document.body.classList.add('overflow-temp');
+            alert('Временные файлы недоступны: переполнение в Проводнике.');
+        }
+        if (systemState.deleted.includes('Logs')) {
+            document.body.classList.add('no-logs');
+            alert('Логи удалены: ошибки отображаются везде.');
+        }
+        if (systemState.deleted.includes('Resources')) {
+            document.body.classList.add('no-resources');
+            alert('Ресурсы удалены: иконки отсутствуют.');
+        }
+        if (systemState.deleted.includes('Security')) {
+            document.body.classList.add('broken-security');
+            alert('Безопасность нарушена: удаление без ограничений.');
+        }
         return true;
     }
-
     function createTempFiles() {
         let temp = fs['C:']['HTML OS']['Temp'];
         for (let i = 1; i <= 5; i++) {
             temp[`tmp${i}.tmp`] = { type: 'file' };
         }
     }
-
     // === НАВИГАЦИЯ ===
     function goTo(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         const screen = document.getElementById(screenId);
         if (screen) screen.classList.add('active');
-
         if (screenId === 'delay1') setTimeout(() => goTo('nosignal'), 2000);
         if (screenId === 'nosignal') setTimeout(() => goTo('start'), 3000);
-        if (screenId === 'start') setTimeout(() => goTo('user'), 3000);
+        if (screenId === 'start') {
+            if (!checkSystemIntegrity()) return;
+            setTimeout(() => goTo('user'), 3000);
+        }
+        if (screenId === 'desktop') {
+            checkSystemIntegrity();
+        }
         if (screenId === 'shutdown') {
             setTimeout(() => {
                 localStorage.setItem(stateKey, JSON.stringify(systemState));
@@ -399,22 +408,23 @@
             }, 5000);
         }
     }
-
     // === ЧАСЫ ===
     setInterval(() => {
         const now = new Date();
         document.getElementById('clock').textContent = now.toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'});
     }, 1000);
-
     // === ПУСК ===
     function toggleStartMenu() {
         const menu = document.getElementById('startMenu');
         isMenuOpen = !isMenuOpen;
         menu.classList.toggle('open', isMenuOpen);
     }
-
     // === ОКНА ===
     function openApp(id) {
+        if (systemState.deleted.includes('Programs')) {
+            alert('Невозможно открыть приложение: папка Programs удалена.');
+            return;
+        }
         if (!isMenuOpen && !minimizedApps[id]) return;
         const win = document.getElementById(id);
         win.classList.add('open');
@@ -431,14 +441,12 @@
         updateTaskbar();
         bringToFront(id);
     }
-
     function closeApp(id) {
         const win = document.getElementById(id);
         win.classList.remove('open', 'maximized');
         delete minimizedApps[id]; delete windowStates[id];
         updateTaskbar();
     }
-
     function minimizeApp(id) {
         const win = document.getElementById(id);
         windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
@@ -446,7 +454,6 @@
         minimizedApps[id] = true;
         updateTaskbar();
     }
-
     function toggleMaximize(id) {
         const win = document.getElementById(id);
         if (win.classList.contains('maximized')) {
@@ -454,4 +461,164 @@
             if (windowStates[id]) {
                 const s = windowStates[id];
                 win.style.top = s.top; win.style.left = s.left;
-                w
+                win.style.width = s.width; win.style.height = s.height;
+            }
+        } else {
+            windowStates[id] = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
+            win.classList.add('maximized');
+        }
+    }
+    function bringToFront(id) {
+        document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = 200);
+        document.getElementById(id).style.zIndex = 201;
+    }
+    // === ПЕРЕТАСКИВАНИЕ ===
+    let dragOffsetX, dragOffsetY, dragId;
+    function dragStart(e, id) {
+        if (document.getElementById(id).classList.contains('maximized')) return;
+        dragId = id;
+        dragOffsetX = e.clientX - document.getElementById(id).getBoundingClientRect().left;
+        dragOffsetY = e.clientY - document.getElementById(id).getBoundingClientRect().top;
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+    }
+    function dragMove(e) {
+        const win = document.getElementById(dragId);
+        win.style.left = `${e.clientX - dragOffsetX}px`;
+        win.style.top = `${e.clientY - dragOffsetY}px`;
+    }
+    function dragEnd() {
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+    }
+    // === ПРОВОДНИК ===
+    function renderExplorer() {
+        const content = document.getElementById('explorerContent');
+        content.innerHTML = '';
+        let currentDir = fs;
+        currentPath.forEach(p => currentDir = currentDir[p]);
+        for (let name in currentDir) {
+            if (systemState.deleted.includes(name)) continue;
+            const item = currentDir[name];
+            const div = document.createElement('div');
+            div.classList.add('file-item');
+            div.onclick = () => selectFile(name, div);
+            div.ondblclick = () => {
+                if (item.type === 'folder') {
+                    currentPath.push(name);
+                    updatePath();
+                    renderExplorer();
+                }
+            };
+            const icon = document.createElement('div');
+            icon.classList.add('file-icon');
+            icon.textContent = item.type === 'folder' ? '📁' : '📄';
+            const label = document.createElement('div');
+            label.classList.add('file-name');
+            label.textContent = name;
+            div.appendChild(icon);
+            div.appendChild(label);
+            content.appendChild(div);
+        }
+        document.getElementById('explorerActions').style.display = selectedFile ? 'flex' : 'none';
+    }
+    function updatePath() {
+        document.getElementById('explorerPath').textContent = currentPath.join('\\');
+    }
+    function selectFile(name, div) {
+        document.querySelectorAll('.file-item').forEach(d => d.classList.remove('selected'));
+        div.classList.add('selected');
+        selectedFile = name;
+        document.getElementById('explorerActions').style.display = 'flex';
+    }
+    function deleteSelected() {
+        if (!selectedFile) return;
+        let currentDir = fs;
+        currentPath.forEach(p => currentDir = currentDir[p]);
+        const item = currentDir[selectedFile];
+        if (item.system) {
+            if (!confirm('Это системная папка. Удаление может сломать систему. Продолжить?')) return;
+        }
+        delete currentDir[selectedFile];
+        systemState.deleted.push(selectedFile);
+        selectedFile = null;
+        renderExplorer();
+    }
+    function renameSelected() {
+        if (!selectedFile) return;
+        const newName = prompt('Новое имя:');
+        if (!newName) return;
+        let currentDir = fs;
+        currentPath.forEach(p => currentDir = currentDir[p]);
+        currentDir[newName] = currentDir[selectedFile];
+        delete currentDir[selectedFile];
+        selectedFile = null;
+        renderExplorer();
+    }
+    // === КАЛЬКУЛЯТОР ===
+    let calcState = { num: '', prev: '', op: '' };
+    function calc(input) {
+        const display = document.getElementById('calcDisplay');
+        if (input === 'C') {
+            calcState = { num: '', prev: '', op: '' };
+            display.textContent = '0';
+        } else if (input === '=') {
+            if (calcState.op && calcState.num) {
+                let result = operate(calcState.prev, calcState.op, calcState.num);
+                display.textContent = result;
+                calcState = { num: result, prev: '', op: '' };
+            }
+        } else if (['+', '-', '*', '/'].includes(input)) {
+            if (calcState.num) {
+                if (calcState.prev && calcState.op) {
+                    calcState.prev = operate(calcState.prev, calcState.op, calcState.num);
+                } else {
+                    calcState.prev = calcState.num;
+                }
+                calcState.op = input;
+                calcState.num = '';
+                display.textContent = calcState.prev;
+            }
+        } else if (input === '±') {
+            if (calcState.num) calcState.num = (-parseFloat(calcState.num)).toString();
+            display.textContent = calcState.num || '0';
+        } else if (input === '%') {
+            if (calcState.num) calcState.num = (parseFloat(calcState.num) / 100).toString();
+            display.textContent = calcState.num || '0';
+        } else {
+            calcState.num += input;
+            display.textContent = calcState.num;
+        }
+    }
+    function operate(a, op, b) {
+        a = parseFloat(a); b = parseFloat(b);
+        switch (op) {
+            case '+': return (a + b).toString();
+            case '-': return (a - b).toString();
+            case '*': return (a * b).toString();
+            case '/': return b !== 0 ? (a / b).toString() : 'Error';
+        }
+    }
+    // === ПАНЕЛЬ ЗАДАЧ ===
+    function updateTaskbar() {
+        const apps = document.getElementById('taskbar-apps');
+        apps.innerHTML = '';
+        ['explorer', 'calc', 'notepad'].forEach(id => {
+            if (document.getElementById(id).classList.contains('open') || minimizedApps[id]) {
+                const btn = document.createElement('div');
+                btn.classList.add('taskbar-app');
+                btn.textContent = id.charAt(0).toUpperCase() + id.slice(1);
+                btn.onclick = () => minimizedApps[id] ? openApp(id) : bringToFront(id);
+                apps.appendChild(btn);
+            }
+        });
+    }
+    // Инициализация
+    document.addEventListener('click', e => {
+        if (isMenuOpen && !document.getElementById('startMenu').contains(e.target) && !document.getElementById('startBtn').contains(e.target)) {
+            toggleStartMenu();
+        }
+    });
+</script>
+</body>
+</html>
