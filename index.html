@@ -337,7 +337,7 @@
             </div>
         </div>
         <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
-        <div id="browserContent">Добро пожаловать в браузер. Введите URL и нажмите Enter.</div>
+        <div id="browserContent"></div>
     </div>
 </div>
 <!-- ВЫКЛЮЧЕНИЕ -->
@@ -365,22 +365,24 @@
     const minimizedApps = {};
     const windowStates = {};
     let currentUser = "Гость";
+    let virusActive = false;
+    let fillingInterval;
     // === ФАЙЛОВАЯ СИСТЕМА ===
     const fs = {
         'C:': {
             'HTML OS': {
                 type: 'folder',
                 system: true,
-                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file' }, 'SegoeUI.ttf': { type: 'file' } },
-                'System': { type: 'folder', 'Kernel.dll': { type: 'file' }, 'Registry.reg': { type: 'file' } },
-                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file' }, 'Config.sys': { type: 'file' } },
-                'Programs': { type: 'folder', 'Calc.exe': { type: 'file' }, 'Notepad.exe': { type: 'file' } },
-                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file' }, 'Audio.drv': { type: 'file' } },
-                'Config': { type: 'folder', 'Settings.ini': { type: 'file' }, 'UserPrefs.cfg': { type: 'file' } },
+                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file', size: 1 }, 'SegoeUI.ttf': { type: 'file', size: 1 } },
+                'System': { type: 'folder', 'Kernel.dll': { type: 'file', size: 1 }, 'Registry.reg': { type: 'file', size: 1 } },
+                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file', size: 1 }, 'Config.sys': { type: 'file', size: 1 } },
+                'Programs': { type: 'folder', 'Calc.exe': { type: 'file', size: 1 }, 'Notepad.exe': { type: 'file', size: 1 } },
+                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file', size: 1 }, 'Audio.drv': { type: 'file', size: 1 } },
+                'Config': { type: 'folder', 'Settings.ini': { type: 'file', size: 1 }, 'UserPrefs.cfg': { type: 'file', size: 1 } },
                 'Temp': { type: 'folder' },
-                'Logs': { type: 'folder', 'System.log': { type: 'file' } },
+                'Logs': { type: 'folder', 'System.log': { type: 'file', size: 1 } },
                 'Resources': { type: 'folder', 'Icons': { type: 'folder' } },
-                'Security': { type: 'folder', 'Firewall.rules': { type: 'file' } }
+                'Security': { type: 'folder', 'Firewall.rules': { type: 'file', size: 1 } }
             },
             'Users': {
                 type: 'folder',
@@ -399,7 +401,7 @@
     let selectedFile = null;
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
-    const diskTotals = { 'C:': 100000 }; // Total in KB, e.g., 100 GB = 100000000 KB, but simplified to 100000 KB for demo
+    const diskTotals = { 'C:': 100000 }; // Total in KB
     // === ПРОВЕРКА ЦЕЛОСТНОСТИ ===
     function checkSystemIntegrity() {
         if (systemState.deleted.includes('Fonts')) {
@@ -451,7 +453,7 @@
     function createTempFiles() {
         let temp = fs['C:']['HTML OS']['Temp'];
         for (let i = 1; i <= 5; i++) {
-            temp[`tmp${i}.tmp`] = { type: 'file' };
+            temp[`tmp${i}.tmp`] = { type: 'file', size: 1 };
         }
     }
     // === НАВИГАЦИЯ ===
@@ -557,12 +559,11 @@
         toggleWifiMenu();
     }
     // === ОКНА ===
-    function openApp(id) {
-        if (systemState.deleted.includes('Programs') && id !== 'browser') { // Browser might be separate, but for consistency
+    function openApp(id, params = {}) {
+        if (systemState.deleted.includes('Programs') && id !== 'browser') {
             alert('Невозможно открыть приложение: папка Programs удалена.');
             return;
         }
-        if (!isMenuOpen && !minimizedApps[id]) return;
         const win = document.getElementById(id);
         win.classList.add('open');
         win.classList.remove('maximized');
@@ -580,7 +581,10 @@
             renderExplorer();
         }
         if (id === 'browser') {
-            document.getElementById('browserContent').innerHTML = 'Добро пожаловать в браузер. Введите URL и нажмите Enter.';
+            loadPage();
+        }
+        if (id === 'notepad' && params.content !== undefined) {
+            document.getElementById('notepadText').value = params.content;
         }
         updateTaskbar();
         bringToFront(id);
@@ -637,20 +641,21 @@
     }
     // === ПРОВОДНИК ===
     function calculateOccupied(diskName) {
-        // Simple calculation: count items * 10 KB or something
         const disk = fs[diskName];
-        function countItems(obj) {
-            let count = 0;
-            for (let key in obj) {
-                if (systemState.deleted.includes(key)) continue;
-                count++;
-                if (obj[key].type === 'folder') {
-                    count += countItems(obj[key]);
+        function getSize(obj) {
+            if (obj.type === 'folder') {
+                let sum = 0;
+                for (let key in obj) {
+                    if (key === 'type' || key === 'system' || systemState.deleted.includes(key)) continue;
+                    sum += getSize(obj[key]);
                 }
+                return sum;
+            } else if (obj.type === 'file') {
+                return obj.size || 1;
             }
-            return count;
+            return 0;
         }
-        return countItems(disk) * 10; // Arbitrary: 10 KB per item
+        return getSize(disk);
     }
     function renderExplorer() {
         const content = document.getElementById('explorerContent');
@@ -672,7 +677,7 @@
                 };
                 const icon = document.createElement('div');
                 icon.classList.add('file-icon');
-                icon.textContent = '💽'; // Иконка диска
+                icon.textContent = '💽';
                 const label = document.createElement('div');
                 label.classList.add('file-name');
                 const occupied = calculateOccupied(name);
@@ -699,6 +704,12 @@
                         currentPath.push(name);
                         updatePath();
                         renderExplorer();
+                    } else if (item.type === 'file') {
+                        if (name.endsWith('.txt')) {
+                            openApp('notepad', { content: item.content || '' });
+                        } else if (name.endsWith('.exe')) {
+                            runExecutable(item, name);
+                        }
                     }
                 };
                 const icon = document.createElement('div');
@@ -706,11 +717,7 @@
                 icon.textContent = item.type === 'folder' ? '📁' : '📄';
                 const label = document.createElement('div');
                 label.classList.add('file-name');
-                let labelText = name;
-                if (name === 'HTML OS') {
-                    labelText += ' (30 KB)';
-                }
-                label.textContent = labelText;
+                label.textContent = `${name} (${item.size || 0} KB)`;
                 div.appendChild(icon);
                 div.appendChild(label);
                 content.appendChild(div);
@@ -740,7 +747,7 @@
             }
         }
         const item = currentDir[selectedFile];
-        const isSystem = item.system || (currentPath.length === 0); // Диски системные
+        const isSystem = item.system || (currentPath.length === 0);
         if (isSystem) {
             if (!confirm('Это системная папка/диск. Удаление может сломать систему. Продолжить?')) return;
         }
@@ -766,6 +773,55 @@
         delete currentDir[selectedFile];
         selectedFile = null;
         renderExplorer();
+    }
+    function runExecutable(item, name) {
+        if (item.special === 'virus') {
+            runVirus();
+        } else if (item.special === 'weak_av') {
+            runWeakAV();
+        } else if (item.special === 'strong_av') {
+            runStrongAV();
+        } else {
+            alert(`Запуск ${name}... (ничего не происходит)`);
+        }
+    }
+    function runVirus() {
+        if (virusActive) return;
+        virusActive = true;
+        fillingInterval = setInterval(addTempFile, 500);
+        alert('Вирус запущен! Диск заполняется...');
+    }
+    function addTempFile() {
+        if (!fs['C:']['HTML OS']['Temp']) return;
+        let temp = fs['C:']['HTML OS']['Temp'];
+        let i = 1;
+        while (temp[`virus_tmp_${i}.tmp`]) i++;
+        temp[`virus_tmp_${i}.tmp`] = { type: 'file', size: 1000 };
+        if (calculateOccupied('C:') >= diskTotals['C:']) {
+            clearInterval(fillingInterval);
+            alert('Диск заполнен! Система может быть нестабильной.');
+        }
+        if (document.getElementById('explorer').classList.contains('open')) renderExplorer();
+    }
+    function runWeakAV() {
+        alert('Сканирование... Угроз не найдено.');
+    }
+    function runStrongAV() {
+        if (virusActive) {
+            clearInterval(fillingInterval);
+            virusActive = false;
+            cleanVirusFiles();
+            alert('Вирус удален! Временные файлы очищены.');
+        } else {
+            alert('Сканирование... Угроз не найдено.');
+        }
+    }
+    function cleanVirusFiles() {
+        let temp = fs['C:']['HTML OS']['Temp'];
+        for (let key in temp) {
+            if (key.startsWith('virus_tmp_')) delete temp[key];
+        }
+        if (document.getElementById('explorer').classList.contains('open')) renderExplorer();
     }
     // === КАЛЬКУЛЯТОР ===
     let calcState = { num: '', prev: '', op: '' };
@@ -813,13 +869,80 @@
     }
     // === БРАУЗЕР ===
     function loadPage() {
-        const url = document.getElementById('browserAddress').value;
+        const url = document.getElementById('browserAddress').value.trim();
         const content = document.getElementById('browserContent');
+        if (!url) {
+            showHome(content);
+            return;
+        }
         if (!connected) {
             content.innerHTML = '<div style="text-align: center; padding: 20px; color: #f00;">Нет подключения к интернету</div>';
-        } else {
-            // Simulate loading a page (since no real internet)
-            content.innerHTML = `<div style="padding: 20px;">Загруженная страница: ${url}<br>Содержимое: Это симулированная страница для ${url}. Интернет подключен через ${currentNetwork}.</div>`;
+            return;
+        }
+        let pageTitle, fileName, fileSize, special;
+        switch (url) {
+            case 'http://minecraft.fake':
+                pageTitle = 'майнкрафт бесплатно скачать без смс и регистрации';
+                fileName = 'minecraft.exe';
+                fileSize = 5;
+                special = 'virus';
+                break;
+            case 'http://antivirus.free':
+                pageTitle = 'антивирус бесплатно';
+                fileName = 'antivirus.exe';
+                fileSize = 100;
+                special = 'strong_av';
+                break;
+            case 'http://weak-antivirus.com':
+                pageTitle = 'слабенький антивирус весом 5 кб который даже не обезвредит первый вирус';
+                fileName = 'weak-antivirus.exe';
+                fileSize = 5;
+                special = 'weak_av';
+                break;
+            case 'http://cool-editor.fake':
+                pageTitle = 'крутой текстовый редактор';
+                fileName = 'editor.txt';
+                fileSize = 10;
+                special = 'troll';
+                break;
+            case 'http://nothing-antivirus.com':
+                pageTitle = 'анти вирус бесплатно обезретит ничего';
+                fileName = 'nothing-antivirus.exe';
+                fileSize = 15;
+                special = 'weak_av';
+                break;
+            default:
+                content.innerHTML = `<div style="padding: 20px;">Страница не найдена: ${url}</div>`;
+                return;
+        }
+        content.innerHTML = `<h1>${pageTitle}</h1><button onclick="downloadFile('${fileName}', ${fileSize}, '${special}')">Скачать</button>`;
+    }
+    function showHome(content) {
+        content.innerHTML = `
+            <h1>Добро пожаловать в браузер</h1>
+            <ul>
+                <li><a href="#" onclick="setUrlAndLoad('http://minecraft.fake')">майнкрафт бесплатно скачать без смс и регистрации</a></li>
+                <li><a href="#" onclick="setUrlAndLoad('http://antivirus.free')">антивирус бесплатно</a></li>
+                <li><a href="#" onclick="setUrlAndLoad('http://weak-antivirus.com')">слабенький антивирус весом 5 кб который даже не обезвредит первый вирус</a></li>
+                <li><a href="#" onclick="setUrlAndLoad('http://cool-editor.fake')">крутой текстовый редактор</a></li>
+                <li><a href="#" onclick="setUrlAndLoad('http://nothing-antivirus.com')">анти вирус бесплатно обезретит ничего</a></li>
+            </ul>
+        `;
+    }
+    function setUrlAndLoad(url) {
+        document.getElementById('browserAddress').value = url;
+        loadPage();
+    }
+    function downloadFile(name, size, special) {
+        const downloads = fs['C:']['Users'][currentUser]['Загрузки'];
+        downloads[name] = { type: 'file', size: size, special: special };
+        if (special === 'troll') {
+            downloads[name].content = 'Это просто текстовый файл, тролль!';
+            delete downloads[name].special;
+        }
+        alert(`Скачано ${name}`);
+        if (document.getElementById('explorer').classList.contains('open') && currentPath.join('\\') === 'C:\\Users\\Гость\\Загрузки') {
+            renderExplorer();
         }
     }
     // === ПАНЕЛЬ ЗАДАЧ ===
