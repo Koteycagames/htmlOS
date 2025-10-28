@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -187,6 +188,16 @@
         .no-logs .win-title::after { content: " ERROR"; color: #f00; }
         .no-resources .file-icon { background: none; font-size: 12px; }
         .broken-security #explorerActions button:first-child { display: none; } /* Удаление без подтверждения, но для простоты скрываем кнопку удаления */
+        /* CMD */
+        #cmd {
+            align-items: flex-start; justify-content: flex-start; padding: 20px;
+            background: #000; color: #0f0; font-family: monospace; font-size: 16px;
+            white-space: pre-wrap; overflow-y: auto;
+        }
+        #cmd-input {
+            background: none; border: none; color: #0f0; font-family: monospace;
+            font-size: 16px; width: 100%; outline: none;
+        }
     </style>
 </head>
 <body>
@@ -208,6 +219,11 @@
     <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
     <p>Если проблема persists, проверьте аппаратное обеспечение.</p>
     <button onclick="location.reload()">Перезагрузить</button>
+</div>
+<!-- CMD ЭКРАН -->
+<div id="cmd" class="screen">
+    <div id="cmd-output"></div>
+    <input id="cmd-input" type="text">
 </div>
 <!-- РАБОЧИЙ СТОЛ -->
 <div id="desktop" class="screen">
@@ -407,7 +423,49 @@
                 goTo('blackscreen');
             }, 5000);
         }
+        if (screenId === 'cmd') {
+            const output = document.getElementById('cmd-output');
+            output.innerHTML = 'Добро пожаловать в режим восстановления CMD.<br>Доступные команды: scan, repair, restart<br><br>';
+            const input = document.getElementById('cmd-input');
+            input.focus();
+            input.addEventListener('keydown', cmdKeyDown);
+        }
     }
+    // === CMD ОБРАБОТКА ===
+    function cmdKeyDown(e) {
+        if (e.key === 'Enter') {
+            const cmd = e.target.value.trim().toLowerCase();
+            document.getElementById('cmd-output').innerHTML += '> ' + e.target.value + '<br>';
+            processCmd(cmd);
+            e.target.value = '';
+            document.getElementById('cmd-output').scrollTop = document.getElementById('cmd-output').scrollHeight;
+        }
+    }
+    function processCmd(command) {
+        const output = document.getElementById('cmd-output');
+        if (command === 'scan') {
+            if (systemState.deleted.length > 0) {
+                output.innerHTML += 'Система повреждена. Удаленные элементы: ' + systemState.deleted.join(', ') + '<br><br>';
+            } else {
+                output.innerHTML += 'Система в порядке.<br><br>';
+            }
+        } else if (command === 'repair') {
+            systemState.deleted = [];
+            localStorage.setItem(stateKey, JSON.stringify(systemState));
+            output.innerHTML += 'Система восстановлена.<br><br>';
+        } else if (command === 'restart') {
+            output.innerHTML += 'Перезапуск...<br><br>';
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            output.innerHTML += 'Неизвестная команда.<br><br>';
+        }
+    }
+    // === СОБЫТИЕ ДЛЯ NO SIGNAL ===
+    document.addEventListener('keydown', function(e) {
+        if (document.getElementById('nosignal').classList.contains('active') && e.key === ' ') {
+            goTo('cmd');
+        }
+    });
     // === ЧАСЫ ===
     setInterval(() => {
         const now = new Date();
