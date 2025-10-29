@@ -17,7 +17,11 @@
         #main div{font-size:24px;}
         #main button{padding:16px 40px;font-size:20px;background:#0f0;color:#000;border:none;border-radius:8px;cursor:pointer;}
         #main button:hover{background:#0c0;}
-        #blackscreen button{padding:16px 32px;font-size:18px;background:#0f0;color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:600;}
+        #store{gap:10px;}
+        #store div{font-size:18px;cursor:pointer;}
+        #store button{padding:12px;background:#0f0;color:#000;border:none;border-radius:6px;cursor:pointer;}
+        #store button:hover{background:#0c0;}
+        #blackscreen button{padding:16px 32px;font-size:18px;background:#0f0;color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin:10px;}
         #blackscreen button:hover{background:#0c0;}
         #nosignal{background:#111;font-size:48px;font-weight:600;letter-spacing:8px;color:#333;text-shadow:0 0 10px #0f0;animation:glitch 1s infinite;}
         @keyframes glitch{0%,100%{text-shadow:0 0 10px #0f0;}50%{text-shadow:2px 2px 10px #f00,-2px -2px 10px #0ff;}}
@@ -33,6 +37,7 @@
         #startBtn:hover{background-color:rgba(255,255,255,0.1);}
         #startMenu{position:fixed;bottom:56px;left:8px;width:360px;height:480px;background:rgba(30,30,30,0.95);backdrop-filter:blur(20px);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:scale(0.9);opacity:0;transform-origin:bottom left;transition:.2s ease;pointer-events:none;}
         #startMenu.open{transform:scale(1);opacity:1;pointer-events:auto;}
+        #timeLeft{font-size:14px;color:#0f0;margin-left:10px;}
         .tile{width:100px;height:100px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;margin:8px;transition:.2s;}
         .tile:hover{background:#0f0;color:#000;transform:translateY(-4px);}
         .app-window{position:fixed;background:#1e1e1e;border-radius:12px;box-shadow:0 16px 32px rgba(0,0,0,0.5);display:none;flex-direction:column;z-index:200;resize:both;overflow:hidden;min-width:300px;min-height:200px;}
@@ -110,16 +115,36 @@
 <!-- MAIN MENU -->
 <div id="main" class="screen">
     <div>Монеты: <span id="coins">0</span></div>
-    <div>Время: <span id="time">0</span> мин</div>
+    <div>Время: <span id="time_os">0</span> мин</div>
     <button onclick="enterOS()">Зайти в ОС</button>
+    <button onclick="goTo('store')">Купить</button>
+</div>
+
+<!-- STORE -->
+<div id="store" class="screen">
+    <h2>Магазин</h2>
+    <div>1 минута ОС - 10 монет</div>
+    <div>1 минута среднего интернета - 20 монет</div>
+    <div>1 минута ультра фаст - 30 монет</div>
+    <h3>Корзина:</h3>
+    <div id="cart"></div>
+    <button onclick="addToCart('os')">+1 мин ОС</button>
+    <button onclick="addToCart('medium')">+1 мин средний</button>
+    <button onclick="addToCart('ultra')">+1 мин ультра</button>
+    <button onclick="checkout()">Оплатить</button>
+    <button onclick="goTo('main')">Назад</button>
 </div>
 
 <!-- ЭКРАНЫ ОС -->
 <div id="blackscreen" class="screen">
-    <button type="button" onclick="goTo('delay1')">Запустить</button>
+    <button onclick="enterOS()">Запустить</button>
+    <button onclick="goTo('main')">Вернуться в меню</button>
 </div>
 <div id="delay1" class="screen"></div>
-<div id="nosignal" class="screen">NO SIGNAL</div>
+<div id="nosignal" class="screen">NO SIGNAL
+    <button onclick="enterOS()">Запустить</button>
+    <button onclick="goTo('main')">Вернуться в меню</button>
+</div>
 <div id="start" class="screen"><div id="logo"></div></div>
 <div id="user" class="screen">
     <div id="avatar">U</div>
@@ -129,8 +154,7 @@
 
 <!-- BSOD -->
 <div id="bsod-screen" class="screen" style="display:none;">
-    <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
-    <p>Система не может загрузиться. Попробуйте перезагрузить.</p>
+    <p>*** STOP: 0x0000007B</p>
     <button onclick="location.reload()">Перезагрузить</button>
     <button onclick="goTo('cmd')">Восстановление</button>
 </div>
@@ -145,6 +169,7 @@
 <div id="desktop" class="screen">
     <div id="taskbar">
         <div id="startBtn" onclick="toggleStartMenu()"></div>
+        <div id="timeLeft">Времени осталось: 0 мин</div>
         <div id="taskbar-apps"></div>
         <div style="flex:1"></div>
         <div id="wifiBtn" onclick="toggleWifiMenu()" style="width:40px;height:40px;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M12%2021l-1-2a7%207%200%200114%200l-1%202a5%205%200%2000-12%200zm-3-4a10%2010%200%200121%200l-1%202a8%208%200%2000-19%200l-1-2zm-3-4a13%2013%200%200127%200l-1%202a11%2011%200%2000-25%200l-1-2z%22%2F%3E%3C%2Fsvg%3E') center/24px no-repeat;border-radius:8px;cursor:pointer;margin-right:8px;"></div>
@@ -281,16 +306,15 @@ const db = firebase.database();
 
 let currentUser = null;
 let timeInterval = null;
+let cart = {os:0,medium:0,ultra:0};
 
 /* ==================== АВТОРИЗАЦИЯ ==================== */
 auth.onAuthStateChanged(u => {
     if (u) {
         currentUser = u;
         document.getElementById('userName').textContent = u.email.split('@')[0];
-        goTo('main');
         loadUserData(u.uid);
-        startTimeTracking(u.uid);
-        updateUserFolder(u.email.split('@')[0]);
+        goTo('main');
     } else {
         currentUser = null;
         goTo('login');
@@ -306,16 +330,59 @@ function register() {
     const e = document.getElementById('regEmail').value;
     const p = document.getElementById('regPassword').value;
     auth.createUserWithEmailAndPassword(e, p)
-        .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time:0}))
+        .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_medium:0,time_ultra:0}))
         .catch(err => alert(err.message));
 }
 function loadUserData(uid) {
     db.ref('users/' + uid + '/coins').on('value', s => document.getElementById('coins').textContent = s.val()||0);
-    db.ref('users/' + uid + '/time').on('value', s => document.getElementById('time').textContent = s.val()||0);
+    db.ref('users/' + uid + '/time_os').on('value', s => {document.getElementById('time_os').textContent = s.val()||0; document.getElementById('timeLeft').textContent = `Времени осталось: ${s.val()||0} мин`;});
 }
-function startTimeTracking(uid) {
+
+/* ==================== МАГАЗИН ==================== */
+function addToCart(type){
+    cart[type]++;
+    updateCart();
+}
+function updateCart(){
+    const c=document.getElementById('cart');
+    c.innerHTML = '';
+    for(let k in cart)if(cart[k]>0)c.innerHTML += `${k.toUpperCase()}: ${cart[k]} мин<br>`;
+}
+function checkout(){
+    if(!currentUser) return;
+    const uid = currentUser.uid;
+    const cost = cart.os*10 + cart.medium*20 + cart.ultra*30;
+    db.ref('users/' + uid + '/coins').transaction(coins => {
+        if((coins||0) < cost){alert('Недостаточно монет');return coins;}
+        return (coins||0) - cost;
+    }).then(() => {
+        db.ref('users/' + uid + '/time_os').transaction(t => (t||0) + cart.os);
+        db.ref('users/' + uid + '/time_medium').transaction(t => (t||0) + cart.medium);
+        db.ref('users/' + uid + '/time_ultra').transaction(t => (t||0) + cart.ultra);
+        cart = {os:0,medium:0,ultra:0};
+        updateCart();
+        alert('Покупка завершена');
+    });
+}
+
+/* ==================== ВХОД В ОС ==================== */
+function enterOS(){
+    if(!currentUser) return;
+    db.ref('users/' + currentUser.uid + '/time_os').once('value').then(s => {
+        if((s.val()||0) <= 0){goTo('nosignal');setTimeout(()=>goTo('blackscreen'),15000);return;}
+        goTo('blackscreen');
+    });
+}
+
+/* ==================== ТАЙМЕР ОС ==================== */
+function startOSTimer(){
     if (timeInterval) clearInterval(timeInterval);
-    timeInterval = setInterval(() => db.ref('users/' + uid + '/time').transaction(t => (t||0)+1), 60000);
+    timeInterval = setInterval(() => {
+        db.ref('users/' + currentUser.uid + '/time_os').transaction(t => {
+            if((t||0) <=0){clearInterval(timeInterval);goTo('shutdown');return 0;}
+            return (t||0) -1;
+        });
+    }, 60000);
 }
 
 /* ==================== НАВИГАЦИЯ ==================== */
@@ -327,7 +394,7 @@ function goTo(id) {
     if (id==='delay1') setTimeout(()=>goTo('nosignal'),2000);
     if (id==='nosignal') setTimeout(()=>goTo('start'),3000);
     if (id==='start') { if(!checkSystemIntegrity()) return; setTimeout(()=>goTo('user'),3000); }
-    if (id==='desktop') { checkSystemIntegrity(); updateTaskbar(); }
+    if (id==='desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); }
     if (id==='shutdown') setTimeout(()=>{localStorage.setItem(stateKey,JSON.stringify(systemState));goTo('main');},5000);
     if (id==='cmd') {
         const out=document.getElementById('cmd-output');
@@ -337,7 +404,6 @@ function goTo(id) {
         inp.onkeydown = cmdKeyDown;
     }
 }
-function enterOS(){ goTo('blackscreen'); }
 
 /* ==================== ПОЛЬЗОВАТЕЛЬСКАЯ ПАПКА ==================== */
 function updateUserFolder(name) {
@@ -444,26 +510,25 @@ function dragEnd(){document.removeEventListener('mousemove',dragMove);document.r
 /* ==================== ПРОВОДНИК ==================== */
 function calculateOccupied(d){const disk=fs[d];function sz(o){if(o.type==='folder'){let s=0;for(let k in o){if(k==='type'||k==='system'||systemState.deleted.includes(k))continue;s+=sz(o[k]);}return s;}return o.type==='file'?o.size||0:0;}const users=Object.keys(fs['C:']['Users']).filter(k=>!['type','system'].includes(k)).length;return baseHTMLOS+baseUser*users+sz(disk);}
 function renderExplorer(){
-    const c=document.getElementById('explorerContent');c.innerHTML='';const root=currentPath.length===0;
+    const c=document.getElementById('explorerContent');c.innerHTML='';
+    const root=currentPath.length===0;
     let cur;
-    if(root){
-        Object.keys(fs).forEach(n=>{if(systemState.deleted.includes(n))return;
-            const div=document.createElement('div');div.className='file-item';
-            div.onclick=()=>selectFile(n,div);
-            div.ondblclick=()=>{currentPath=[n];updatePath();renderExplorer();};
-            const ic=document.createElement('div');ic.className='file-icon';ic.textContent='Disk';
-            const lb=document.createElement('div');lb.className='file-name';
-            lb.textContent=`${n} (${calculateOccupied(n)} кб/50 кб)`;
-            div.append(ic,lb);c.append(div);
-        });
-    }else{
+    if(root){Object.keys(fs).forEach(n=>{if(systemState.deleted.includes(n))return;
+        const div=document.createElement('div');div.className='file-item';
+        div.onclick=()=>selectFile(n,div);
+        div.ondblclick=()=>{currentPath=[n];updatePath();renderExplorer();};
+        const ic=document.createElement('div');ic.className='file-icon';ic.textContent='💽';
+        const lb=document.createElement('div');lb.className='file-name';
+        lb.textContent=`${n} (${calculateOccupied(n)} кб/50 кб)`;
+        div.append(ic,lb);c.append(div);
+    });}else{
         cur=fs[currentPath[0]];for(let i=1;i<currentPath.length;i++)cur=cur[currentPath[i]];
         for(let n in cur){if(systemState.deleted.includes(n))continue;const it=cur[n];
             if(it.type!=='folder'&&it.type!=='file')continue;
             const div=document.createElement('div');div.className='file-item';
             div.onclick=()=>selectFile(n,div);
             div.ondblclick=()=>{if(it.type==='folder'){currentPath.push(n);updatePath();renderExplorer();}else if(it.type==='file'){if(n.endsWith('.txt'))openApp('notepad',{content:it.content||''});else if(n.endsWith('.exe'))runExecutable(it,n);}};
-            const ic=document.createElement('div');ic.className='file-icon';ic.textContent=it.type==='folder'?'Folder':'File';
+            const ic=document.createElement('div');ic.className='file-icon';ic.textContent=it.type==='folder'?'📁':'📄';
             const lb=document.createElement('div');lb.className='file-name';lb.textContent=`${n} (${it.size||0} KB)`;
             div.append(ic,lb);c.append(div);
         }
@@ -474,6 +539,19 @@ function updatePath(){document.getElementById('explorerPath').textContent=curren
 function selectFile(n,d){document.querySelectorAll('.file-item').forEach(i=>i.classList.remove('selected'));d.classList.add('selected');selectedFile=n;document.getElementById('explorerActions').style.display='flex';}
 function deleteSelected(){if(!selectedFile)return;let cur=currentPath.length===0?fs:fs[currentPath[0]];for(let i=1;i<currentPath.length;i++)cur=cur[currentPath[i]];if(cur[selectedFile].system && !confirm('Системный файл. Удалить?'))return;delete cur[selectedFile];systemState.deleted.push(selectedFile);selectedFile=null;renderExplorer();}
 function renameSelected(){if(!selectedFile)return;const nn=prompt('Новое имя:');if(!nn)return;let cur=currentPath.length===0?fs:fs[currentPath[0]];for(let i=1;i<currentPath.length;i++)cur=cur[currentPath[i]];cur[nn]=cur[selectedFile];delete cur[selectedFile];selectedFile=null;renderExplorer();}
+
+/* ==================== ВИРУС И АНТИВИРУС ==================== */
+function runExecutable(it,n){
+    if(it.special==='virus') runVirus();
+    else if(it.special==='weak_av') runWeakAV();
+    else if(it.special==='strong_av') runStrongAV();
+    else alert(`Запуск ${n}...`);
+}
+function runVirus(){if(virusActive)return;virusActive=true;fillingInterval=setInterval(addTempFile,500);alert('Вирус запущен!');}
+function addTempFile(){if(!fs['C:']['HTML OS']['Temp'])return;let t=fs['C:']['HTML OS']['Temp'];let i=1;while(t[`virus_tmp_${i}.tmp`])i++;t[`virus_tmp_${i}.tmp`]={type:'file',size:1000};if(calculateOccupied('C:')>=diskTotals['C:']){clearInterval(fillingInterval);alert('Диск заполнен!');}if(document.getElementById('explorer').classList.contains('open'))renderExplorer();}
+function runWeakAV(){alert('Сканирование... Ничего не найдено.');}
+function runStrongAV(){if(virusActive){clearInterval(fillingInterval);virusActive=false;cleanVirusFiles();alert('Вирус удален!');}else alert('Сканирование... Ничего не найдено.');}
+function cleanVirusFiles(){let t=fs['C:']['HTML OS']['Temp'];for(let k in t)if(k.startsWith('virus_tmp_'))delete t[k];if(document.getElementById('explorer').classList.contains('open'))renderExplorer();}
 
 /* ==================== КАЛЬКУЛЯТОР ==================== */
 let calcState={num:'',prev:'',op:''};
