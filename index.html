@@ -112,6 +112,12 @@
         #messengerAuth { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #messengerAuth input { width: 280px; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #0f0; color: #0f0; border-radius: 6px; font-size: 16px; }
         #messengerAuth button { width: 280px; padding: 12px; margin: 8px 0; background: #0f0; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        #specs { position: fixed; top: 10px; right: 10px; color: #0f0; font-size: 14px; }
+        #taskmanagerContent { flex: 1; display: flex; flex-direction: column; }
+        .tab { padding: 8px; background: #444; cursor: pointer; }
+        .tab.active { background: #0f0; color: #000; }
+        #processesTab, #performanceTab { flex: 1; padding: 16px; background: #000; color: #0f0; overflow: auto; display: none; }
+        #diskMessage { font-size: 24px; color: #f00; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -149,12 +155,26 @@
     <div>1 минута Бомж Wi-Fi - 20 монет</div>
     <div>1 минута Средний Wi-Fi - 30 монет</div>
     <div>1 минута Ultra fast - 50 монет</div>
+    <div>Процессор HTML 1 - 100 монет</div>
+    <button onclick="addToCart('cpu1')">Купить HTML 1</button>
+    <div>Процессор HTML 2 - 300 монет</div>
+    <button onclick="addToCart('cpu2')">Купить HTML 2</button>
+    <div>Процессор HTML 3 - 500 монет</div>
+    <button onclick="addToCart('cpu3')">Купить HTML 3</button>
+    <div>Оперативная память +10 KB - 100 монет</div>
+    <button onclick="addToCart('ram10')">+10 KB RAM</button>
+    <div>Оперативная память +50 KB - 500 монет</div>
+    <button onclick="addToCart('ram50')">+50 KB RAM</button>
+    <div>Оперативная память +500 KB - 1000 монет</div>
+    <button onclick="addToCart('ram500')">+500 KB RAM</button>
+    <div>Диск +50 KB - 100 монет</div>
+    <button onclick="addToCart('disk50')">+50 KB Disk</button>
+    <div>Диск +100 KB - 200 монет</div>
+    <button onclick="addToCart('disk100')">+100 KB Disk</button>
+    <div>Диск +500 KB - 2000 монет</div>
+    <button onclick="addToCart('disk500')">+500 KB Disk</button>
     <h3>Корзина:</h3>
     <div id="cart"></div>
-    <button onclick="addToCart('os')">+1 мин ОС</button>
-    <button onclick="addToCart('bomj')">+1 мин Бомж</button>
-    <button onclick="addToCart('medium')">+1 мин Средний</button>
-    <button onclick="addToCart('ultra')">+1 мин Ultra</button>
     <button onclick="checkout()">Оплатить</button>
     <button onclick="goTo('main')">Назад</button>
 </div>
@@ -166,6 +186,7 @@
 <div id="delay1" class="screen"></div>
 <div id="nosignal" class="screen">
     NO SIGNAL
+    <div id="diskMessage" style="display:none;">Не найден диск</div>
     <input id="nosignal-input" type="text" placeholder="scan / repair" onkeydown="if(event.key==='Enter') runNoSignalCmd();">
 </div>
 <div id="start" class="screen"><div id="logo"></div></div>
@@ -182,6 +203,7 @@
 </div>
 <!-- ДЕСКТОП -->
 <div id="desktop" class="screen">
+    <div id="specs">ЦП: HTML 0 | ОЗУ: 0 KB | Диск: 50 KB</div>
     <div id="desktop-icons"></div>
     <div id="taskbar">
         <div id="startBtn" onclick="toggleStartMenu()"></div>
@@ -199,6 +221,7 @@
             <div class="tile" onclick="openApp('notepad')">Блокнот</div>
             <div class="tile" onclick="openApp('browser')">Браузер</div>
             <div class="tile" onclick="openApp('messenger')">Мессенджер</div>
+            <div class="tile" onclick="openApp('taskmanager')">Диспетчер задач</div>
             <div class="tile" onclick="goTo('shutdown')">Выключить</div>
         </div>
     </div>
@@ -308,6 +331,31 @@
             </div>
         </div>
     </div>
+    <!-- ДИСПЕТЧЕР ЗАДАЧ -->
+    <div id="taskmanager" class="app-window" style="top:22%;left:30%;width:600px;height:450px;">
+        <div class="win-title" onmousedown="dragStart(event,'taskmanager')">
+            <span>Диспетчер задач</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('taskmanager')">–</button>
+                <button onclick="toggleMaximize('taskmanager')">□</button>
+                <button onclick="closeApp('taskmanager')">×</button>
+            </div>
+        </div>
+        <div style="display:flex; background:#2d2d2d;">
+            <div class="tab active" onclick="showTab('processes')">Процессы</div>
+            <div class="tab" onclick="showTab('performance')">Производительность</div>
+        </div>
+        <div id="taskmanagerContent">
+            <div id="processesTab" style="display:flex;">
+                <div id="processesList"></div>
+            </div>
+            <div id="performanceTab" style="display:none;">
+                <p>Процессор: HTML <span id="cpuPerf">0</span> ()</p>
+                <p>Оперативная память: <span id="ramPerf">0</span> ()</p>
+                <p>Диск: <span id="diskPerf">50</span> KB ()</p>
+            </div>
+        </div>
+    </div>
 </div>
 <!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
@@ -349,7 +397,7 @@ const auth = firebase.auth();
 const db = firebase.database();
 let currentUser = null;
 let timeInterval = null, wifiInterval = null;
-let cart = {os:0,bomj:0,medium:0,ultra:0};
+let cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
 let previousScreen = '';
 let connected = false, currentNetwork = '';
 let currentUserName = "Гость";
@@ -377,6 +425,9 @@ const virusFiles = ['gift.exe', 'hack.exe', 'crack.exe', 'money.exe', 'scan.exe'
 let msgUser = null;
 let currentChatTarget = null;
 let contextTarget = 'explorer';
+let global_cpu = 0;
+let global_ram = 0;
+let global_disk = 50;
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -399,6 +450,9 @@ function loadUserData(uid) {
         document.getElementById('time_os').textContent = s.val()||0;
         document.getElementById('timeLeft').textContent = `Времени осталось: ${s.val()||0} мин`;
     });
+    db.ref('users/' + uid + '/cpu').on('value', s => { global_cpu = s.val()||0; updateSpecs(); updatePerf(); });
+    db.ref('users/' + uid + '/ram').on('value', s => { global_ram = s.val()||0; updateSpecs(); updatePerf(); });
+    db.ref('users/' + uid + '/disk').on('value', s => { global_disk = s.val()||50; updateSpecs(); updatePerf(); });
     const updateWifiTime = () => {
         Promise.all([
             db.ref('users/' + uid + '/time_bomj').once('value').then(s => s.val()||0),
@@ -413,6 +467,9 @@ function loadUserData(uid) {
     updateWifiTime();
     db.ref('users/' + uid).on('child_changed', updateWifiTime);
 }
+function updateSpecs() {
+    document.getElementById('specs').textContent = `ЦП: HTML ${global_cpu} | ОЗУ: ${global_ram} KB | Диск: ${global_disk} KB`;
+}
 function login() {
     const e = document.getElementById('loginEmail').value;
     const p = document.getElementById('loginPassword').value;
@@ -422,7 +479,7 @@ function register() {
     const e = document.getElementById('regEmail').value;
     const p = document.getElementById('regPassword').value;
     auth.createUserWithEmailAndPassword(e, p)
-        .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_bomj:0,time_medium:0,time_ultra:0}))
+        .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_bomj:0,time_medium:0,time_ultra:0, cpu:0, ram:0, disk:50}))
         .catch(err => alert(err.message));
 }
 /* ==================== АВТОРИЗАЦИЯ ==================== */
@@ -451,8 +508,6 @@ function saveUserFiles() {
     if (currentUserName && fs['C:']['Users'][currentUserName]) {
         localStorage.setItem('user_files_' + currentUserName, JSON.stringify(fs['C:']['Users'][currentUserName]));
     }
-    if (document.getElementById('desktop').classList.contains('active')) renderDesktop();
-    if (document.getElementById('explorer').classList.contains('open')) renderExplorer();
 }
 /* NO SIGNAL CMD */
 document.addEventListener('keydown', (e) => {
@@ -497,16 +552,15 @@ function removeViruses() {
     db.ref('users/' + currentUser.uid + '/coins').transaction(c => {
         if ((c || 0) >= 400) {
             const userFolder = fs['C:']['Users'][currentUserName];
-            function removeFromFolder(folder) {
-                for (let key in folder) {
-                    if (folder[key].type === 'folder') {
-                        removeFromFolder(folder[key]);
-                    } else if (virusFiles.includes(key)) {
-                        delete folder[key];
+            for (let folder in userFolder) {
+                if (userFolder[folder].type === 'folder') {
+                    for (let file in userFolder[folder]) {
+                        if (virusFiles.includes(file)) {
+                            delete userFolder[folder][file];
+                        }
                     }
                 }
             }
-            removeFromFolder(userFolder);
             saveUserFiles();
             alert('Вирусы удалены!');
             return (c || 0) - 400;
@@ -517,6 +571,45 @@ function removeViruses() {
     });
 }
 /* МЕССЕНДЖЕР */
+function openApp(id, params={}){
+    const win = document.getElementById(id);
+    win.classList.remove('minimized');
+    win.style.display = 'flex';
+    win.classList.add('open');
+    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
+    if(id === 'browser') goHome();
+    if(id === 'notepad' && params.content !== undefined) {
+        document.getElementById('notepadText').value = params.content || '';
+        document.getElementById('notepad').dataset.file = params.file;
+        document.getElementById('notepad').dataset.path = params.path;
+    }
+    if(id === 'messenger'){ 
+        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex'; 
+        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
+        if (msgUser) listenForMessages(); 
+    }
+    if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); }
+    updateTaskbar(); bringToFront(id);
+}
+function showTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('processesTab').style.display = tab === 'processes' ? 'flex' : 'none';
+    document.getElementById('performanceTab').style.display = tab === 'performance' ? 'flex' : 'none';
+    if (tab === 'processes') updateProcesses();
+}
+function updateProcesses() {
+    const list = document.getElementById('processesList');
+    list.innerHTML = '';
+    document.querySelectorAll('.app-window.open').forEach(win => {
+        list.innerHTML += `<p>${win.querySelector('.win-title span').textContent}</p>`;
+    });
+}
+function updatePerf() {
+    document.getElementById('cpuPerf').textContent = global_cpu;
+    document.getElementById('ramPerf').textContent = global_ram;
+    document.getElementById('diskPerf').textContent = global_disk;
+}
 function msgRegister() {
     const username = document.getElementById('msgUsername').value;
     const password = document.getElementById('msgPassword').value;
@@ -604,7 +697,7 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     const cont = document.getElementById('browserContent');
     if(!connected){ cont.innerHTML = '<p style="color:#f00;text-align:center;">Нет интернета</p>'; return; }
     if(url === '' || url === 'home') { goHome(); return; }
-    let page = '', file = '', size = 0;
+    let page = '', file = '', size = 0, isVirus = false;
     switch(url){
         case 'http://news.html': page = 'Новости'; cont.innerHTML = `<h1>${page}</h1><p>Последние новости из мира...</p>`; return;
         case 'http://weather.html': page = 'Погода'; cont.innerHTML = `<h1>${page}</h1><p>Сегодня солнечно...</p>`; return;
@@ -665,27 +758,9 @@ function completeDownload(name, size){
         alert(`Скачано ${name}`);
     }
     saveUserFiles();
+    if(document.getElementById('explorer').classList.contains('open')) renderExplorer();
 }
 /* ОКНА */
-function openApp(id, params={}){
-    const win = document.getElementById(id);
-    win.classList.remove('minimized');
-    win.style.display = 'flex';
-    win.classList.add('open');
-    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
-    if(id === 'browser') goHome();
-    if(id === 'notepad' && params.content !== undefined) {
-        document.getElementById('notepadText').value = params.content || '';
-        document.getElementById('notepad').dataset.file = params.file;
-        document.getElementById('notepad').dataset.path = params.path;
-    }
-    if(id === 'messenger'){ 
-        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex'; 
-        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
-        if (msgUser) listenForMessages(); 
-    }
-    updateTaskbar(); bringToFront(id);
-}
 function closeApp(id){
     const win = document.getElementById(id);
     win.classList.remove('open');
@@ -770,16 +845,15 @@ function calculateOccupied(d){
         }
         return o.type === 'file' ? o.size || 0 : 0;
     }
-    const users = Object.keys(fs['C:']['Users']).length;
+    const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
     return 30 + 5 * users + sz(fs[d]);
 }
 function calculateFree(d){
-    return 50 - calculateOccupied(d);
+    return global_disk - calculateOccupied(d);
 }
 function renderExplorer(){
     const c = document.getElementById('explorerContent'); c.innerHTML = '';
     const root = currentPath.length === 0;
-    document.getElementById('explorerActions').style.display = root ? 'none' : 'flex';
     let cur;
     if(root){
         Object.keys(fs).forEach(n => {
@@ -788,7 +862,7 @@ function renderExplorer(){
             div.onclick = () => selectFile(n, div);
             div.ondblclick = () => { currentPath = [n]; updatePath(); renderExplorer(); };
             const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = 'DISK';
-            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (свободно ${calculateFree(n)} кб/50 кб)`;
+            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (свободно ${calculateFree(n)} кб/${global_disk} кб)`;
             div.append(ic, lb); c.append(div);
         });
     } else {
@@ -832,9 +906,10 @@ function renderExplorer(){
             div.append(ic, lb); c.append(div);
         }
     }
+    document.getElementById('explorerActions').style.display = root ? 'none' : 'flex';
 }
 function updatePath(){ document.getElementById('explorerPath').textContent = currentPath.length === 0 ? 'Компьютер' : currentPath.join('\\\\'); }
-function selectFile(n, d){ document.querySelectorAll('.file-item, .desktop-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
+function selectFile(n, d){ document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
 function deleteSelected(){ 
     if(!selectedFile) return; 
     let cur = getCurrentFolder();
@@ -842,8 +917,7 @@ function deleteSelected(){
     delete cur[selectedFile]; 
     systemState.deleted.push(selectedFile); 
     selectedFile = null; 
-    if (contextTarget === 'explorer') renderExplorer(); 
-    if (contextTarget === 'desktop') renderDesktop(); 
+    renderExplorer(); 
     saveUserFiles(); 
 }
 function renameSelected(){ 
@@ -854,36 +928,27 @@ function renameSelected(){
     cur[nn] = cur[selectedFile]; 
     delete cur[selectedFile]; 
     selectedFile = null; 
-    if (contextTarget === 'explorer') renderExplorer(); 
-    if (contextTarget === 'desktop') renderDesktop(); 
+    renderExplorer(); 
     saveUserFiles(); 
 }
 function createNewFolder() {
     const name = prompt('Имя папки:') || 'Новая папка';
     let cur = getCurrentFolder();
-    if (cur[name]) return alert('Имя уже существует');
     cur[name] = {type: 'folder', size: 1};
-    if (contextTarget === 'explorer') renderExplorer(); 
-    if (contextTarget === 'desktop') renderDesktop(); 
+    renderExplorer();
     saveUserFiles();
 }
 function createNewTextFile() {
     const name = prompt('Имя файла:') || 'Новый текст.txt';
     let cur = getCurrentFolder();
-    if (cur[name]) return alert('Имя уже существует');
     cur[name] = {type: 'file', size: 1, content: ''};
-    if (contextTarget === 'explorer') renderExplorer(); 
-    if (contextTarget === 'desktop') renderDesktop(); 
+    renderExplorer();
     saveUserFiles();
 }
 function getCurrentFolder() {
-    if (contextTarget === 'desktop') {
-        return fs['C:']['Users'][currentUserName]['Desktop'];
-    } else {
-        let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
-        for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
-        return cur;
-    }
+    let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
+    for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
+    return cur;
 }
 function updateFileSize() {
     const text = document.getElementById('notepadText').value;
@@ -901,59 +966,6 @@ function saveNotepadContent() {
     updateFileSize();
     saveUserFiles();
 }
-/* РАБОЧИЙ СТОЛ */
-function renderDesktop() {
-    const c = document.getElementById('desktop-icons'); c.innerHTML = '';
-    const desktop = fs['C:']['Users'][currentUserName]['Desktop'] || {type:'folder', size:1};
-    for (let n in desktop) {
-        if (systemState.deleted.includes(n)) continue;
-        const it = desktop[n];
-        if (it.type !== 'folder' && it.type !== 'file') continue;
-        const div = document.createElement('div'); div.className = 'desktop-item';
-        div.dataset.name = n;
-        div.onclick = () => selectFile(n, div);
-        div.ondblclick = () => {
-            if (it.type === 'folder') { currentPath = ['C:', 'Users', currentUserName, 'Desktop', n]; openApp('explorer'); }
-            else if (it.type === 'file' && n.endsWith('.txt')) {
-                openApp('notepad', {file: n, path: 'C:\\Users\\' + currentUserName + '\\Desktop', content: it.content || ''});
-            } else if (it.type === 'file' && n.endsWith('.exe')) {
-                if (virusFiles.includes(n)) {
-                    document.body.classList.add('flicker');
-                    setTimeout(() => {
-                        document.body.classList.remove('flicker');
-                        systemState.deleted.push('Boot');
-                        localStorage.setItem(stateKey, JSON.stringify(systemState));
-                        goTo('bsod-screen');
-                    }, 2000);
-                } else {
-                    openMockApp(n);
-                }
-            } else {
-                alert('Неизвестный тип файла: ' + n);
-            }
-        };
-        const ic = document.createElement('div'); ic.className = 'desktop-icon'; ic.textContent = it.type === 'folder' ? 'FOLDER' : 'FILE';
-        const lb = document.createElement('div'); lb.className = 'desktop-name'; lb.textContent = n;
-        div.append(ic, lb); c.append(div);
-    }
-}
-/* КОНТЕКСТНОЕ МЕНЮ */
-document.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    const menu = document.getElementById('contextMenu');
-    menu.style.left = e.pageX + 'px';
-    menu.style.top = e.pageY + 'px';
-    if (e.target.closest('#explorerContent')) {
-        contextTarget = 'explorer';
-        menu.style.display = 'block';
-    } else if (e.target.closest('#desktop-icons') || (e.target.closest('#desktop') && !e.target.closest('.app-window'))) {
-        contextTarget = 'desktop';
-        menu.style.display = 'block';
-    } else {
-        menu.style.display = 'none';
-    }
-});
-document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
 function showProperties() {
     if (!selectedFile) return;
     let cur = getCurrentFolder();
@@ -993,17 +1005,14 @@ function calc(btn){
 function updateTaskbar(){
     const a = document.getElementById('taskbar-apps'); a.innerHTML = '';
     document.querySelectorAll('.app-window').forEach(win => {
-        if(win.classList.contains('open') && !win.classList.contains('minimized')){
-            const b = document.createElement('div'); b.className = 'taskbar-app';
-            b.textContent = win.querySelector('.win-title span').textContent;
-            b.onclick = () => bringToFront(win.id);
-            a.appendChild(b);
-        } else if (win.classList.contains('minimized')) {
+        if(win.classList.contains('open')){
             const b = document.createElement('div'); b.className = 'taskbar-app';
             b.textContent = win.querySelector('.win-title span').textContent;
             b.onclick = () => {
-                win.classList.remove('minimized');
-                win.style.display = 'flex';
+                if(win.classList.contains('minimized')){
+                    win.classList.remove('minimized');
+                    win.style.display = 'flex';
+                }
                 bringToFront(win.id);
             };
             a.appendChild(b);
@@ -1084,7 +1093,7 @@ function connectWifi(net){
 function checkSystemIntegrity(){
     if(systemState.deleted.includes('Boot')){
         const bsod = document.getElementById('bsod-screen');
-        bsod.style.display = 'flex';
+        if (bsod) bsod.style.display = 'flex';
         return false;
     }
     return true;
@@ -1098,9 +1107,9 @@ function updateCart(){
     let total = 0;
     for(let k in cart){
         if(cart[k]>0){
-            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast'}[k];
-            c.innerHTML += `${name}: ${cart[k]} мин <button onclick="removeFromCart('${k}')">-</button><br>`;
-            total += cart[k] * {os:10,bomj:20,medium:30,ultra:50}[k];
+            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast', cpu1:'HTML 1', cpu2:'HTML 2', cpu3:'HTML 3', ram10:'+10 KB RAM', ram50:'+50 KB RAM', ram500:'+500 KB RAM', disk50:'+50 KB Disk', disk100:'+100 KB Disk', disk500:'+500 KB Disk'}[k];
+            c.innerHTML += `${name}: ${cart[k]} <button onclick="removeFromCart('${k}')">-</button><br>`;
+            total += cart[k] * {os:10,bomj:20,medium:30,ultra:50, cpu1:100, cpu2:300, cpu3:500, ram10:100, ram50:500, ram500:1000, disk50:100, disk100:200, disk500:2000}[k];
         }
     }
     if(total > 0) c.innerHTML += `<br>Общая сумма: ${total} монет`;
@@ -1108,7 +1117,7 @@ function updateCart(){
 function checkout(){
     if(!currentUser) return;
     const uid = currentUser.uid;
-    const cost = cart.os*10 + cart.bomj*20 + cart.medium*30 + cart.ultra*50;
+    const cost = cart.os*10 + cart.bomj*20 + cart.medium*30 + cart.ultra*50 + cart.cpu1*100 + cart.cpu2*300 + cart.cpu3*500 + cart.ram10*100 + cart.ram50*500 + cart.ram500*1000 + cart.disk50*100 + cart.disk100*200 + cart.disk500*2000;
     db.ref('users/' + uid + '/coins').once('value').then(snap => {
         const coins = snap.val() || 0;
         if(coins < cost){alert('Недостаточно монет');return;}
@@ -1117,7 +1126,12 @@ function checkout(){
         db.ref('users/' + uid + '/time_bomj').transaction(t => (t||0) + cart.bomj);
         db.ref('users/' + uid + '/time_medium').transaction(t => (t||0) + cart.medium);
         db.ref('users/' + uid + '/time_ultra').transaction(t => (t||0) + cart.ultra);
-        cart = {os:0,bomj:0,medium:0,ultra:0};
+        if (cart.cpu3 > 0) db.ref('users/' + uid + '/cpu').set(3);
+        else if (cart.cpu2 > 0) db.ref('users/' + uid + '/cpu').set(2);
+        else if (cart.cpu1 > 0) db.ref('users/' + uid + '/cpu').set(1);
+        db.ref('users/' + uid + '/ram').transaction(r => (r||0) + cart.ram10*10 + cart.ram50*50 + cart.ram500*500);
+        db.ref('users/' + uid + '/disk').transaction(d => (d||50) + cart.disk50*50 + cart.disk100*100 + cart.disk500*500);
+        cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
         updateCart();
         alert('Покупка завершена');
     });
@@ -1128,16 +1142,23 @@ function enterOS(){
     goTo('blackscreen');
 }
 function launchOS(){
-    db.ref('users/' + currentUser.uid + '/time_os').once('value').then(s => {
-        const time = s.val() || 0;
-        if(time > 0){
-            previousScreen = 'delay1';
-            goTo('delay1');
-        } else {
+    db.ref('users/' + currentUser.uid).once('value').then(s => {
+        const userData = s.val() || {};
+        if (userData.cpu === 0 || userData.ram === 0) {
             previousScreen = 'nosignal_no_time';
             goTo('nosignal');
-            setTimeout(() => goTo('blackscreen'), 15000);
+            return;
         }
+        if (userData.disk === 0) {
+            previousScreen = 'nosignal_no_time';
+            goTo('nosignal');
+            setTimeout(() => {
+                document.getElementById('diskMessage').style.display = 'block';
+            }, 3000);
+            return;
+        }
+        previousScreen = 'delay1';
+        goTo('delay1');
     });
 }
 /* ЧАСЫ */
