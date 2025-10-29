@@ -476,6 +476,7 @@ function completeDownload(name, size){
 /* ОКНА */
 function openApp(id, params={}){
     const win = document.getElementById(id);
+    win.classList.remove('minimized');
     win.style.display = 'flex';
     win.classList.add('open');
     if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
@@ -485,12 +486,18 @@ function openApp(id, params={}){
 }
 function closeApp(id){ 
     const win = document.getElementById(id);
-    win.style.display = 'none'; 
     win.classList.remove('open'); 
     win.classList.remove('maximized'); 
+    win.classList.remove('minimized'); 
+    win.style.display = 'none'; 
     updateTaskbar(); 
 }
-function minimizeApp(id){ document.getElementById(id).style.display = 'none'; updateTaskbar(); }
+function minimizeApp(id){ 
+    const win = document.getElementById(id);
+    win.classList.add('minimized');
+    win.style.display = 'none'; 
+    updateTaskbar(); 
+}
 function toggleMaximize(id){ const w = document.getElementById(id); w.classList.toggle('maximized'); }
 function bringToFront(id){ document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = 200); document.getElementById(id).style.zIndex = 201; }
 
@@ -592,10 +599,16 @@ function updateTaskbar(){
     const a = document.getElementById('taskbar-apps'); a.innerHTML = '';
     ['explorer','calc','notepad','browser'].forEach(id => {
         const win = document.getElementById(id);
-        if(win.classList.contains('open') && win.style.display !== 'none'){
+        if(win.classList.contains('open')){
             const b = document.createElement('div'); b.className = 'taskbar-app';
             b.textContent = {explorer:'Проводник',calc:'Калькулятор',notepad:'Блокнот',browser:'Браузер'}[id];
-            b.onclick = () => { win.style.display = 'flex'; bringToFront(id); };
+            b.onclick = () => { 
+                if(win.classList.contains('minimized')){
+                    win.classList.remove('minimized');
+                    win.style.display = 'flex';
+                }
+                bringToFront(id); 
+            };
             a.appendChild(b);
         }
     });
@@ -687,10 +700,19 @@ function checkSystemIntegrity(){
 
 /* МАГАЗИН */
 function addToCart(type){cart[type]++;updateCart();}
+function removeFromCart(type){if(cart[type]>0)cart[type]--;updateCart();}
 function updateCart(){
     const c=document.getElementById('cart');
     c.innerHTML = '';
-    for(let k in cart)if(cart[k]>0)c.innerHTML += `${k.toUpperCase()}: ${cart[k]} мин<br>`;
+    let total = 0;
+    for(let k in cart){
+        if(cart[k]>0){
+            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast'}[k];
+            c.innerHTML += `${name}: ${cart[k]} мин <button onclick="removeFromCart('${k}')">-</button><br>`;
+            total += cart[k] * {os:10,bomj:20,medium:30,ultra:50}[k];
+        }
+    }
+    if(total > 0) c.innerHTML += `<br>Общая сумма: ${total} монет`;
 }
 function checkout(){
     if(!currentUser) return;
