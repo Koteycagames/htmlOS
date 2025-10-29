@@ -14,10 +14,13 @@
         #login input, #register input { width: 280px; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #0f0; color: #0f0; border-radius: 6px; font-size: 16px; }
         #login button, #register button { width: 280px; padding: 12px; margin: 8px 0; background: #0f0; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
         #login button:hover, #register button:hover { background: #0c0; }
-        #main { gap: 20px; }
+        #main { gap: 20px; align-items: flex-start; padding: 20px; }
         #main div { font-size: 24px; }
         #main button { padding: 16px 40px; font-size: 20px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
         #main button:hover { background: #0c0; }
+        #systemButtons { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 10px; }
+        #systemButtons button { padding: 10px 20px; font-size: 16px; background: #0f0; color: #000; border: none; border-radius: 6px; cursor: pointer; }
+        #systemButtons button:hover { background: #0c0; }
         #store { gap: 10px; }
         #store div { font-size: 18px; cursor: pointer; }
         #store button { padding: 12px; background: #0f0; color: #000; border: none; border-radius: 6px; cursor: pointer; }
@@ -32,7 +35,13 @@
         #userName { font-size: 28px; margin-bottom: 30px; }
         #loginBtn { padding: 12px 40px; background: #0f0; color: #000; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
         #loginBtn:hover { background: #0c0; }
-        #desktop { background: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80') center/cover; }
+        #desktop { background: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80') center/cover; position: relative; }
+        #desktop-icons { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 48px); display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); padding: 20px; overflow: auto; }
+        .desktop-item { text-align: center; cursor: pointer; padding: 8px; border-radius: 6px; transition: 0.2s; }
+        .desktop-item:hover { background: rgba(0,255,0,0.1); }
+        .desktop-item.selected { background: #0f0; color: #000; }
+        .desktop-icon { width: 48px; height: 48px; margin: 0 auto 8px; background: #0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; }
+        .desktop-name { font-size: 12px; word-break: break-all; }
         #taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 48px; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); display: flex; align-items: center; padding: 0 8px; z-index: 100; }
         #startBtn { width: 40px; height: 40px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>') center/24px no-repeat; border-radius: 8px; cursor: pointer; }
         #startBtn:hover { background-color: rgba(255,255,255,0.1); }
@@ -94,10 +103,18 @@
         #nosignal-input { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 400px; padding: 10px; background: #000; color: #0f0; border: 1px solid #0f0; font-family: monospace; display: none; }
         @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .flicker { animation: flicker 0.1s infinite; }
+        #contextMenu { position: fixed; background: rgba(30,30,30,0.95); backdrop-filter: blur(20px); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); padding: 8px 0; z-index: 300; display: none; }
+        .context-item { padding: 8px 16px; cursor: pointer; }
+        .context-item:hover { background: #0f0; color: #000; }
+        #messengerContent { flex: 1; display: flex; flex-direction: column; }
+        #chatList { flex: 1; overflow-y: auto; padding: 16px; background: #000; color: #0f0; }
+        #chatInput { padding: 8px; background: #222; color: #0f0; border: none; }
+        #messengerAuth { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #messengerAuth input { width: 280px; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #0f0; color: #0f0; border-radius: 6px; font-size: 16px; }
+        #messengerAuth button { width: 280px; padding: 12px; margin: 8px 0; background: #0f0; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
-
 <!-- LOGIN -->
 <div id="login" class="screen active">
     <h2>Вход</h2>
@@ -106,7 +123,6 @@
     <button onclick="login()">Войти</button>
     <button onclick="goTo('register')">Регистрация</button>
 </div>
-
 <!-- REGISTER -->
 <div id="register" class="screen">
     <h2>Регистрация</h2>
@@ -115,15 +131,17 @@
     <button onclick="register()">Зарегистрироваться</button>
     <button onclick="goTo('login')">Назад</button>
 </div>
-
 <!-- MAIN MENU -->
 <div id="main" class="screen">
+    <div id="systemButtons">
+        <button onclick="restoreSystem()">Восстановить систему (300 монет)</button>
+        <button onclick="removeViruses()">Удалить вирусы (400 монет)</button>
+    </div>
     <div>Монеты: <span id="coins">0</span></div>
     <div>ОС: <span id="time_os">0</span> мин | Wi-Fi: <span id="wifi_time">0</span> мин</div>
     <button onclick="enterOS()">Зайти в ОС</button>
     <button onclick="goTo('store')">Купить</button>
 </div>
-
 <!-- STORE -->
 <div id="store" class="screen">
     <h2>Магазин</h2>
@@ -140,7 +158,6 @@
     <button onclick="checkout()">Оплатить</button>
     <button onclick="goTo('main')">Назад</button>
 </div>
-
 <!-- ОС -->
 <div id="blackscreen" class="screen">
     <button onclick="launchOS()">Запустить</button>
@@ -157,16 +174,15 @@
     <div id="userName">Гость</div>
     <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
 </div>
-
 <!-- BSOD -->
 <div id="bsod-screen" class="screen">
     <p>*** STOP: 0x0000007B (INACCESSIBLE_BOOT_DEVICE)</p>
     <p>Система не может загрузиться.</p>
     <button onclick="location.reload()">Перезагрузить</button>
 </div>
-
 <!-- ДЕСКТОП -->
 <div id="desktop" class="screen">
+    <div id="desktop-icons"></div>
     <div id="taskbar">
         <div id="startBtn" onclick="toggleStartMenu()"></div>
         <div id="timeLeft">Времени осталось: 0 мин</div>
@@ -176,17 +192,16 @@
         <div id="wifiBtn" onclick="toggleWifiMenu()" style="width:40px;height:40px;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M12%2021l-1-2a7%207%200%200114%200l-1%202a5%205%200%2000-12%200zm-3-4a10%2010%200%200121%200l-1%202a8%208%200%2000-19%200l-1-2zm-3-4a13%2013%200%200127%200l-1%202a11%2011%200%2000-25%200l-1-2z%22%2F%3E%3C%2Fsvg%3E') center/24px no-repeat;border-radius:8px;cursor:pointer;margin-right:8px;"></div>
         <div style="color:#aaa;font-size:12px;" id="clock">12:00</div>
     </div>
-
     <div id="startMenu">
         <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
             <div class="tile" onclick="openApp('explorer')">Проводник</div>
             <div class="tile" onclick="openApp('calc')">Калькулятор</div>
             <div class="tile" onclick="openApp('notepad')">Блокнот</div>
             <div class="tile" onclick="openApp('browser')">Браузер</div>
+            <div class="tile" onclick="openApp('messenger')">Мессенджер</div>
             <div class="tile" onclick="goTo('shutdown')">Выключить</div>
         </div>
     </div>
-
     <!-- ПРОВОДНИК -->
     <div id="explorer" class="app-window" style="top:10%;left:10%;width:700px;height:500px;">
         <div class="win-title" onmousedown="dragStart(event,'explorer')">
@@ -199,12 +214,13 @@
         </div>
         <div id="explorerPath">Компьютер</div>
         <div id="explorerContent"></div>
-        <div id="explorerActions" style="display:none;">
+        <div id="explorerActions">
+            <button onclick="createNewFolder()">Новая папка</button>
+            <button onclick="createNewTextFile()">Новый текст. файл</button>
             <button onclick="deleteSelected()">Удалить</button>
             <button onclick="renameSelected()">Переименовать</button>
         </div>
     </div>
-
     <!-- КАЛЬКУЛЯТОР -->
     <div id="calc" class="app-window" style="top:15%;left:15%;width:320px;height:420px;">
         <div class="win-title" onmousedown="dragStart(event,'calc')">
@@ -238,7 +254,6 @@
             <div class="calc-btn operator" onclick="calc('=')">=</div>
         </div>
     </div>
-
     <!-- БЛОКНОТ -->
     <div id="notepad" class="app-window" style="top:18%;left:20%;width:500px;height:380px;">
         <div class="win-title" onmousedown="dragStart(event,'notepad')">
@@ -249,9 +264,8 @@
                 <button onclick="closeApp('notepad')">×</button>
             </div>
         </div>
-        <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
+        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize()"></textarea>
     </div>
-
     <!-- БРАУЗЕР -->
     <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
         <div class="win-title" onmousedown="dragStart(event,'browser')">
@@ -269,27 +283,56 @@
         <div id="browserDownloads"></div>
         <div id="browserContent"></div>
     </div>
+    <!-- МЕССЕНДЖЕР -->
+    <div id="messenger" class="app-window" style="top:20%;left:25%;width:600px;height:500px;">
+        <div class="win-title" onmousedown="dragStart(event,'messenger')">
+            <span>Мессенджер</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('messenger')">–</button>
+                <button onclick="toggleMaximize('messenger')">□</button>
+                <button onclick="closeApp('messenger')">×</button>
+            </div>
+        </div>
+        <div id="messengerContent">
+            <div id="messengerAuth">
+                <h2>Вход / Регистрация</h2>
+                <input id="msgUsername" placeholder="ID (username)">
+                <input id="msgPassword" type="password" placeholder="Пароль">
+                <button onclick="msgLogin()">Войти</button>
+                <button onclick="msgRegister()">Зарегистрироваться</button>
+            </div>
+            <div id="chatInterface" style="display:none; flex-direction:column; flex:1;">
+                <input id="chatTarget" placeholder="ID собеседника">
+                <div id="chatList"></div>
+                <input id="chatInput" placeholder="Сообщение" onkeydown="if(event.key==='Enter') sendMessage();">
+            </div>
+        </div>
+    </div>
 </div>
-
 <!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
     <div id="shutdownLogo"></div>
     <div id="shutdownText">Завершение работы</div>
     <div id="shutdownDots"><span>.</span><span>.</span><span>.</span></div>
 </div>
-
 <!-- Wi-Fi -->
 <div id="wifiMenu">
     <div class="wifi-item" onclick="connectWifi('bomj')">Бомж Wi-Fi</div>
     <div class="wifi-item" onclick="connectWifi('medium')">Средний Wi-Fi</div>
     <div class="wifi-item" onclick="connectWifi('ultra')">Ultra fast</div>
 </div>
-
+<!-- КОНТЕКСТНОЕ МЕНЮ -->
+<div id="contextMenu">
+    <div class="context-item" onclick="createNewFolder()">Новая папка</div>
+    <div class="context-item" onclick="createNewTextFile()">Новый текстовый файл</div>
+    <div class="context-item" onclick="showProperties()">Свойства</div>
+    <div class="context-item" onclick="deleteSelected()">Удалить</div>
+    <div class="context-item" onclick="renameSelected()">Переименовать</div>
+</div>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
 /* ==================== FIREBASE ==================== */
 const firebaseConfig = {
@@ -304,7 +347,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-
 let currentUser = null;
 let timeInterval = null, wifiInterval = null;
 let cart = {os:0,bomj:0,medium:0,ultra:0};
@@ -326,32 +368,32 @@ let fs = {
             'Temp':{type:'folder'},
             'Logs':{type:'folder','System.log':{type:'file',size:0}},
             'Resources':{type:'folder','Icons':{type:'folder'}},
-            'Security':{type:'folder','Firewall.rules':{type:'file',size:0}}
+            'Security':{type:'folder','Firewall.rules':{type:'file',size:0}},
+            'Desktop':{type:'folder'}
         },
         'Users':{type:'folder',system:true}
     }
 };
-
 const virusFiles = ['gift.exe', 'hack.exe', 'crack.exe', 'money.exe', 'scan.exe', 'update.exe', 'premium.exe', 'cheat.exe', 'torrent.exe', 'vpn.exe'];
-
+let msgAuth = auth; // Используем тот же auth для мессенджера, но можно отдельный
+let msgUser = null;
+let currentChatTarget = null;
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const el = document.getElementById(id);
     if (el) el.classList.add('active');
-
     if (id === 'delay1') setTimeout(() => goTo('nosignal'), 2000);
     if (id === 'nosignal') {
         if (previousScreen === 'delay1') setTimeout(() => goTo('start'), 3000);
     }
-    if (id === 'start') { 
+    if (id === 'start') {
         if(!checkSystemIntegrity()) return;
-        setTimeout(() => goTo('user'), 3000); 
+        setTimeout(() => goTo('user'), 3000);
     }
-    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); }
+    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); }
     if (id === 'shutdown') setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, 5000);
 }
-
 function loadUserData(uid) {
     db.ref('users/' + uid + '/coins').on('value', s => document.getElementById('coins').textContent = s.val()||0);
     db.ref('users/' + uid + '/time_os').on('value', s => {
@@ -372,7 +414,6 @@ function loadUserData(uid) {
     updateWifiTime();
     db.ref('users/' + uid).on('child_changed', updateWifiTime);
 }
-
 function login() {
     const e = document.getElementById('loginEmail').value;
     const p = document.getElementById('loginPassword').value;
@@ -385,7 +426,6 @@ function register() {
         .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_bomj:0,time_medium:0,time_ultra:0}))
         .catch(err => alert(err.message));
 }
-
 /* ==================== АВТОРИЗАЦИЯ ==================== */
 auth.onAuthStateChanged(u => {
     if (u) {
@@ -394,13 +434,13 @@ auth.onAuthStateChanged(u => {
         document.getElementById('userName').textContent = currentUserName;
         loadUserData(u.uid);
         loadUserFiles();
+        updateUserFolder(currentUserName);
         goTo('main');
     } else {
         currentUser = null;
         goTo('login');
     }
 });
-
 function loadUserFiles() {
     const saved = localStorage.getItem('user_files_' + currentUserName);
     if (saved) {
@@ -414,7 +454,6 @@ function saveUserFiles() {
         localStorage.setItem('user_files_' + currentUserName, JSON.stringify(fs['C:']['Users'][currentUserName]));
     }
 }
-
 /* NO SIGNAL CMD */
 document.addEventListener('keydown', (e) => {
     if (document.getElementById('nosignal').classList.contains('active') && e.code === 'Space') {
@@ -429,7 +468,6 @@ function runNoSignalCmd() {
     const cmd = input.value.trim().toLowerCase();
     input.value = '';
     input.style.display = 'none';
-
     if (cmd === 'scan') {
         const damaged = systemState.deleted.includes('Boot');
         alert(damaged ? 'Система повреждена (Boot удалён)' : 'Система в порядке');
@@ -441,7 +479,107 @@ function runNoSignalCmd() {
         alert('Неизвестная команда');
     }
 }
-
+/* ВОССТАНОВЛЕНИЕ И УДАЛЕНИЕ ВИРУСОВ */
+function restoreSystem() {
+    db.ref('users/' + currentUser.uid + '/coins').transaction(c => {
+        if ((c || 0) >= 300) {
+            systemState.deleted = [];
+            localStorage.setItem(stateKey, JSON.stringify(systemState));
+            alert('Система восстановлена!');
+            return (c || 0) - 300;
+        } else {
+            alert('Недостаточно монет');
+            return c;
+        }
+    });
+}
+function removeViruses() {
+    db.ref('users/' + currentUser.uid + '/coins').transaction(c => {
+        if ((c || 0) >= 400) {
+            const userFolder = fs['C:']['Users'][currentUserName];
+            for (let folder in userFolder) {
+                if (userFolder[folder].type === 'folder') {
+                    for (let file in userFolder[folder]) {
+                        if (virusFiles.includes(file)) {
+                            delete userFolder[folder][file];
+                        }
+                    }
+                }
+            }
+            saveUserFiles();
+            alert('Вирусы удалены!');
+            return (c || 0) - 400;
+        } else {
+            alert('Недостаточно монет');
+            return c;
+        }
+    });
+}
+/* МЕССЕНДЖЕР */
+function openApp(id, params={}) {
+    const win = document.getElementById(id);
+    win.classList.remove('minimized');
+    win.style.display = 'flex';
+    win.classList.add('open');
+    if (id === 'explorer') { currentPath = []; updatePath(); renderExplorer(); }
+    if (id === 'browser') goHome();
+    if (id === 'notepad' && params.file) {
+        document.getElementById('notepadText').value = params.content || '';
+        document.getElementById('notepad').dataset.file = params.file;
+        document.getElementById('notepad').dataset.path = params.path;
+    }
+    if (id === 'messenger') { 
+        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex'; 
+        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
+        if (msgUser) listenForMessages(); 
+    }
+    updateTaskbar(); bringToFront(id);
+}
+function msgRegister() {
+    const username = document.getElementById('msgUsername').value;
+    const password = document.getElementById('msgPassword').value;
+    if (!username || !password) return alert('Заполните поля');
+    db.ref('messenger_users/' + username).once('value').then(snap => {
+        if (snap.exists()) return alert('ID занято');
+        db.ref('messenger_users/' + username).set({password: password});
+        msgLogin();
+    });
+}
+function msgLogin() {
+    const username = document.getElementById('msgUsername').value;
+    const password = document.getElementById('msgPassword').value;
+    db.ref('messenger_users/' + username).once('value').then(snap => {
+        if (snap.exists() && snap.val().password === password) {
+            msgUser = username;
+            document.getElementById('messengerAuth').style.display = 'none';
+            document.getElementById('chatInterface').style.display = 'flex';
+        } else {
+            alert('Неверные данные');
+        }
+    });
+}
+function sendMessage() {
+    const target = document.getElementById('chatTarget').value;
+    const msg = document.getElementById('chatInput').value;
+    if (!target || !msg) return;
+    const chatId = [msgUser, target].sort().join('_');
+    db.ref('chats/' + chatId).push({from: msgUser, text: msg, time: Date.now()});
+    document.getElementById('chatInput').value = '';
+    currentChatTarget = target;
+}
+function listenForMessages() {
+    if (!currentChatTarget) return;
+    const chatId = [msgUser, currentChatTarget].sort().join('_');
+    db.ref('chats/' + chatId).on('value', snap => {
+        const list = document.getElementById('chatList');
+        list.innerHTML = '';
+        snap.forEach(child => {
+            const m = child.val();
+            list.innerHTML += `<p>${m.from}: ${m.text}</p>`;
+        });
+        list.scrollTop = list.scrollHeight;
+    });
+}
 /* БРАУЗЕР */
 function goHome(){
     document.getElementById('browserAddress').value = '';
@@ -537,7 +675,6 @@ function completeDownload(name, size){
     updateUserFolder(currentUserName);
     const down = fs['C:']['Users'][currentUserName]['Загрузки'];
     down[name] = {type:'file', size:size};
-    const virusFiles = ['gift.exe', 'hack.exe', 'crack.exe', 'money.exe', 'scan.exe', 'update.exe', 'premium.exe', 'cheat.exe', 'torrent.exe', 'vpn.exe'];
     if(virusFiles.includes(name)){
         systemState.deleted.push('Boot');
         localStorage.setItem(stateKey, JSON.stringify(systemState));
@@ -547,36 +684,27 @@ function completeDownload(name, size){
     }
     saveUserFiles();
     if(document.getElementById('explorer').classList.contains('open')) renderExplorer();
+    renderDesktop();
 }
-
 /* ОКНА */
-function openApp(id, params={}){
+function closeApp(id){
     const win = document.getElementById(id);
+    win.classList.remove('open');
+    win.classList.remove('maximized');
     win.classList.remove('minimized');
-    win.style.display = 'flex';
-    win.classList.add('open');
-    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
-    if(id === 'browser') goHome();
-    if(id === 'notepad' && params.content !== undefined) document.getElementById('notepadText').value = params.content;
-    updateTaskbar(); bringToFront(id);
+    win.style.display = 'none';
+    if (id === 'notepad') saveNotepadContent();
+    updateTaskbar();
 }
-function closeApp(id){ 
-    const win = document.getElementById(id);
-    win.classList.remove('open'); 
-    win.classList.remove('maximized'); 
-    win.classList.remove('minimized'); 
-    win.style.display = 'none'; 
-    updateTaskbar(); 
-}
-function minimizeApp(id){ 
+function minimizeApp(id){
     const win = document.getElementById(id);
     win.classList.add('minimized');
-    win.style.display = 'none'; 
-    updateTaskbar(); 
+    win.style.display = 'none';
+    if (id === 'notepad') saveNotepadContent();
+    updateTaskbar();
 }
 function toggleMaximize(id){ const w = document.getElementById(id); w.classList.toggle('maximized'); }
 function bringToFront(id){ document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = 200); document.getElementById(id).style.zIndex = 201; }
-
 /* ДИНАМИЧЕСКИЕ ОКНА */
 function createAppWindow(id, title, innerHTML){
     if(document.getElementById(id)){
@@ -619,21 +747,24 @@ function openMockApp(name){
     }
     createAppWindow(id, name, content);
 }
-
 /* ПРОВОДНИК */
 function updateUserFolder(name) {
     if (!fs['C:']['Users'][name]) {
         fs['C:']['Users'][name] = {type:'folder',
-            'Загрузки':{type:'folder'}, 'Документы':{type:'folder'}, 'Картинки':{type:'folder'}, 'Видео':{type:'folder'}
+            'Загрузки':{type:'folder', size:1},
+            'Документы':{type:'folder', size:1},
+            'Картинки':{type:'folder', size:1},
+            'Видео':{type:'folder', size:1},
+            'Desktop':{type:'folder', size:1}
         };
     }
 }
 function calculateOccupied(d){
     function sz(o){
         if(o.type === 'folder'){
-            let s = 0;
+            let s = o.size || 1;
             for(let k in o){
-                if(k === 'type' || k === 'system' || systemState.deleted.includes(k)) continue;
+                if(k === 'type' || k === 'system' || k === 'size' || systemState.deleted.includes(k)) continue;
                 s += sz(o[k]);
             }
             return s;
@@ -668,11 +799,12 @@ function renderExplorer(){
             const it = cur[n];
             if(it.type !== 'folder' && it.type !== 'file') continue;
             const div = document.createElement('div'); div.className = 'file-item';
+            div.dataset.name = n;
             div.onclick = () => selectFile(n, div);
             div.ondblclick = () => {
                 if(it.type === 'folder'){ currentPath.push(n); updatePath(); renderExplorer(); }
                 else if(it.type === 'file' && n.endsWith('.txt')){
-                    openApp('notepad', {content: it.content || ''});
+                    openApp('notepad', {file: n, path: currentPath.join('\\'), content: it.content || ''});
                 } else if(it.type === 'file' && n.endsWith('.exe')){
                     if(virusFiles.includes(n)){
                         document.body.classList.add('flicker');
@@ -700,13 +832,130 @@ function renderExplorer(){
             div.append(ic, lb); c.append(div);
         }
     }
-    document.getElementById('explorerActions').style.display = selectedFile ? 'flex' : 'none';
+    document.getElementById('explorerActions').style.display = 'flex';
 }
 function updatePath(){ document.getElementById('explorerPath').textContent = currentPath.length === 0 ? 'Компьютер' : currentPath.join('\\\\'); }
-function selectFile(n, d){ document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; document.getElementById('explorerActions').style.display = 'flex'; }
-function deleteSelected(){ if(!selectedFile) return; let cur = currentPath.length === 0 ? fs : fs[currentPath[0]]; for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]]; if(cur[selectedFile].system && !confirm('Системный файл. Удалить?')) return; delete cur[selectedFile]; systemState.deleted.push(selectedFile); selectedFile = null; renderExplorer(); saveUserFiles(); }
-function renameSelected(){ if(!selectedFile) return; const nn = prompt('Новое имя:'); if(!nn) return; let cur = currentPath.length === 0 ? fs : fs[currentPath[0]]; for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]]; cur[nn] = cur[selectedFile]; delete cur[selectedFile]; selectedFile = null; renderExplorer(); saveUserFiles(); }
-
+function selectFile(n, d){ document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
+function deleteSelected(){ 
+    if(!selectedFile) return; 
+    let cur = getCurrentFolder();
+    if(cur[selectedFile].system && !confirm('Системный файл. Удалить?')) return; 
+    delete cur[selectedFile]; 
+    systemState.deleted.push(selectedFile); 
+    selectedFile = null; 
+    renderExplorer(); 
+    saveUserFiles(); 
+    renderDesktop(); 
+}
+function renameSelected(){ 
+    if(!selectedFile) return; 
+    const nn = prompt('Новое имя:'); 
+    if(!nn) return; 
+    let cur = getCurrentFolder();
+    cur[nn] = cur[selectedFile]; 
+    delete cur[selectedFile]; 
+    selectedFile = null; 
+    renderExplorer(); 
+    saveUserFiles(); 
+    renderDesktop(); 
+}
+function createNewFolder() {
+    const name = prompt('Имя папки:') || 'Новая папка';
+    let cur = getCurrentFolder();
+    cur[name] = {type: 'folder', size: 1};
+    renderExplorer();
+    saveUserFiles();
+    renderDesktop();
+}
+function createNewTextFile() {
+    const name = prompt('Имя файла:') || 'Новый текст.txt';
+    let cur = getCurrentFolder();
+    cur[name] = {type: 'file', size: 1, content: ''};
+    renderExplorer();
+    saveUserFiles();
+    renderDesktop();
+}
+function getCurrentFolder() {
+    let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
+    for (let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
+    return cur;
+}
+function updateFileSize() {
+    const text = document.getElementById('notepadText').value;
+    const size = 1 + Math.floor(text.length / 30);
+    const file = document.getElementById('notepad').dataset.file;
+    const path = document.getElementById('notepad').dataset.path.split('\\');
+    let cur = fs[path[0]];
+    for (let i = 1; i < path.length; i++) cur = cur[path[i]];
+    if (cur[file]) {
+        cur[file].content = text;
+        cur[file].size = size;
+    }
+}
+function saveNotepadContent() {
+    updateFileSize();
+    saveUserFiles();
+    renderExplorer();
+    renderDesktop();
+}
+function showProperties() {
+    if (!selectedFile) return;
+    let cur = getCurrentFolder();
+    const item = cur[selectedFile];
+    let props = `Имя: ${selectedFile}\nТип: ${item.type}\nРазмер: ${item.size || 0} KB`;
+    alert(props);
+}
+/* РАБОЧИЙ СТОЛ */
+function renderDesktop() {
+    const c = document.getElementById('desktop-icons'); c.innerHTML = '';
+    const desktop = fs['C:']['Users'][currentUserName]['Desktop'] || {};
+    for (let n in desktop) {
+        if (systemState.deleted.includes(n)) continue;
+        const it = desktop[n];
+        if (it.type !== 'folder' && it.type !== 'file') continue;
+        const div = document.createElement('div'); div.className = 'desktop-item';
+        div.dataset.name = n;
+        div.onclick = () => selectDesktopFile(n, div);
+        div.ondblclick = () => {
+            if (it.type === 'folder') { currentPath = ['C:', 'Users', currentUserName, 'Desktop', n]; openApp('explorer'); }
+            else if (it.type === 'file' && n.endsWith('.txt')) {
+                openApp('notepad', {file: n, path: ['C:', 'Users', currentUserName, 'Desktop'].join('\\'), content: it.content || ''});
+            } else if (it.type === 'file' && n.endsWith('.exe')) {
+                if (virusFiles.includes(n)) {
+                    document.body.classList.add('flicker');
+                    setTimeout(() => {
+                        document.body.classList.remove('flicker');
+                        systemState.deleted.push('Boot');
+                        localStorage.setItem(stateKey, JSON.stringify(systemState));
+                        goTo('bsod-screen');
+                    }, 2000);
+                } else {
+                    openMockApp(n);
+                }
+            } else {
+                alert('Неизвестный тип файла: ' + n);
+            }
+        };
+        const ic = document.createElement('div'); ic.className = 'desktop-icon'; ic.textContent = it.type === 'folder' ? 'FOLDER' : 'FILE';
+        const lb = document.createElement('div'); lb.className = 'desktop-name'; lb.textContent = n;
+        div.append(ic, lb); c.append(div);
+    }
+}
+function selectDesktopFile(n, d) { document.querySelectorAll('.desktop-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
+/* КОНТЕКСТНОЕ МЕНЮ */
+document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const menu = document.getElementById('contextMenu');
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+    menu.style.display = 'block';
+    if (e.target.closest('#desktop-icons') || e.target.closest('#desktop') || e.target.closest('#explorerContent')) {
+        // Показываем меню
+    } else {
+        menu.style.display = 'none';
+    }
+});
+document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
 /* КАЛЬКУЛЯТОР */
 let calcMemory = '0', calcOperator = '', calcWaiting = false;
 function calc(btn){
@@ -735,7 +984,6 @@ function calc(btn){
         display.textContent = display.textContent === '0' ? btn : display.textContent + btn;
     }
 }
-
 /* ПАНЕЛЬ ЗАДАЧ */
 function updateTaskbar(){
     const a = document.getElementById('taskbar-apps'); a.innerHTML = '';
@@ -743,18 +991,17 @@ function updateTaskbar(){
         if(win.classList.contains('open')){
             const b = document.createElement('div'); b.className = 'taskbar-app';
             b.textContent = win.querySelector('.win-title span').textContent;
-            b.onclick = () => { 
+            b.onclick = () => {
                 if(win.classList.contains('minimized')){
                     win.classList.remove('minimized');
                     win.style.display = 'flex';
                 }
-                bringToFront(win.id); 
+                bringToFront(win.id);
             };
             a.appendChild(b);
         }
     });
 }
-
 /* ПУСК И Wi-Fi */
 function toggleStartMenu(){
     const m = document.getElementById('startMenu');
@@ -764,13 +1011,11 @@ function toggleWifiMenu(){
     const m = document.getElementById('wifiMenu');
     m.classList.toggle('open');
 }
-
 /* ПЕРЕТАСКИВАНИЕ */
 let dragId, dragX, dragY;
 function dragStart(e,id){ if(e.target.tagName === 'BUTTON') return; dragId = id; const rect = document.getElementById(id).getBoundingClientRect(); dragX = e.clientX - rect.left; dragY = e.clientY - rect.top; document.addEventListener('mousemove', dragMove); document.addEventListener('mouseup', dragEnd); }
 function dragMove(e){ const w = document.getElementById(dragId); w.style.left = (e.clientX - dragX) + 'px'; w.style.top = (e.clientY - dragY) + 'px'; }
 function dragEnd(){ document.removeEventListener('mousemove', dragMove); document.removeEventListener('mouseup', dragEnd); }
-
 /* ТАЙМЕРЫ */
 function startOSTimer(){
     if (timeInterval) clearInterval(timeInterval);
@@ -798,7 +1043,6 @@ function startWifiTimer(){
         });
     }, 60000);
 }
-
 /* Wi-Fi */
 function autoConnectWifi(){
     const types = {bomj: 'Бомж Wi-Fi', medium: 'Средний Wi-Fi', ultra: 'Ultra fast'};
@@ -828,7 +1072,6 @@ function connectWifi(net){
         } else alert('Нет времени');
     });
 }
-
 /* СИСТЕМНАЯ ПРОВЕРКА */
 function checkSystemIntegrity(){
     if(systemState.deleted.includes('Boot')){
@@ -838,7 +1081,6 @@ function checkSystemIntegrity(){
     }
     return true;
 }
-
 /* МАГАЗИН */
 function addToCart(type){cart[type]++;updateCart();}
 function removeFromCart(type){if(cart[type]>0)cart[type]--;updateCart();}
@@ -872,7 +1114,6 @@ function checkout(){
         alert('Покупка завершена');
     });
 }
-
 /* ВХОД В ОС */
 function enterOS(){
     if(!currentUser) return;
@@ -891,10 +1132,8 @@ function launchOS(){
         }
     });
 }
-
 /* ЧАСЫ */
 setInterval(() => { const n = new Date(); document.getElementById('clock').textContent = n.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'}); }, 1000);
-
 /* ИНИЦИАЛИЗАЦИЯ */
 goTo('login');
 </script>
