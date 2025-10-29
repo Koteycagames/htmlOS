@@ -229,10 +229,33 @@
         .download-progress { height: 4px; background: #ddd; }
         .download-progress-bar { height: 100%; background: #0f0; width: 0%; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js"></script>
 </head>
 <body>
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Пароль">
+    <button onclick="login()">Войти</button>
+    <button onclick="goTo('register')">Регистрация</button>
+</div>
+<!-- REGISTER -->
+<div id="register" class="screen">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="password" id="regPassword" placeholder="Пароль">
+    <button onclick="register()">Зарегистрироваться</button>
+    <button onclick="goTo('login')">Назад</button>
+</div>
+<!-- MAIN MENU -->
+<div id="main" class="screen">
+    <div>Монеты: <span id="coins">0</span></div>
+    <div>Время: <span id="time">0</span> мин</div>
+    <button onclick="goTo('blackscreen')">Зайти</button>
+</div>
 <!-- ЭКРАНЫ -->
-<div id="blackscreen" class="screen active">
+<div id="blackscreen" class="screen">
     <button type="button" onclick="goTo('delay1')">Запустить</button>
 </div>
 <div id="delay1" class="screen"></div>
@@ -367,6 +390,61 @@
     <div class="wifi-item" onclick="connectWifi('Ultra fast')">Ultra fast</div>
 </div>
 <script>
+    // Firebase Config - Replace with your own
+    var firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var auth = firebase.auth();
+    var db = firebase.database();
+
+    auth.onAuthStateChanged(function(user) {
+        if (user) {
+            goTo('main');
+            loadUserData(user.uid);
+        } else {
+            goTo('login');
+        }
+    });
+
+    function login() {
+        var email = document.getElementById('loginEmail').value;
+        var password = document.getElementById('loginPassword').value;
+        auth.signInWithEmailAndPassword(email, password).catch(function(error) {
+            alert(error.message);
+        });
+    }
+
+    function register() {
+        var email = document.getElementById('regEmail').value;
+        var password = document.getElementById('regPassword').value;
+        auth.createUserWithEmailAndPassword(email, password).then(function(cred) {
+            db.ref('users/' + cred.user.uid).set({
+                coins: 0,
+                time: 0
+            });
+            goTo('main');
+        }).catch(function(error) {
+            alert(error.message);
+        });
+    }
+
+    function loadUserData(uid) {
+        db.ref('users/' + uid + '/coins').on('value', function(snap) {
+            document.getElementById('coins').textContent = snap.val() || 0;
+        });
+        db.ref('users/' + uid + '/time').on('value', function(snap) {
+            document.getElementById('time').textContent = snap.val() || 0;
+        });
+    }
+
     let isMenuOpen = false;
     let isWifiOpen = false;
     let connected = false;
