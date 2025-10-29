@@ -216,7 +216,10 @@
         .wifi-item:hover { background: rgba(255,255,255,0.2); }
         .wifi-item.connected { background: #0f0; color: #000; }
         /* Browser */
-        #browserAddress { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; border: none; width: 100%; }
+        #browserNav { display: flex; align-items: center; background: #000; }
+        #browserAddress { flex: 1; padding: 8px; color: #0f0; font-family: monospace; font-size: 14px; border: none; }
+        #browserHomeBtn { padding: 8px; background: #444; color: #fff; border: none; cursor: pointer; }
+        #browserHomeBtn:hover { background: #666; }
         #browserContent { flex: 1; padding: 16px; background: #fff; color: #000; overflow: auto; }
         #browserDownloads {
             position: absolute; top: 0; right: 0; width: 200px; background: rgba(255,255,255,0.8); color: #000;
@@ -343,7 +346,10 @@
                 <button onclick="closeApp('browser')">×</button>
             </div>
         </div>
-        <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
+        <div id="browserNav">
+            <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
+            <button id="browserHomeBtn" onclick="goHome()">Домой</button>
+        </div>
         <div id="browserDownloads"></div>
         <div id="browserContent"></div>
     </div>
@@ -381,16 +387,16 @@
             'HTML OS': {
                 type: 'folder',
                 system: true,
-                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file', size: 1 }, 'SegoeUI.ttf': { type: 'file', size: 1 } },
-                'System': { type: 'folder', 'Kernel.dll': { type: 'file', size: 1 }, 'Registry.reg': { type: 'file', size: 1 } },
-                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file', size: 1 }, 'Config.sys': { type: 'file', size: 1 } },
-                'Programs': { type: 'folder', 'Calc.exe': { type: 'file', size: 1 }, 'Notepad.exe': { type: 'file', size: 1 } },
-                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file', size: 1 }, 'Audio.drv': { type: 'file', size: 1 } },
-                'Config': { type: 'folder', 'Settings.ini': { type: 'file', size: 1 }, 'UserPrefs.cfg': { type: 'file', size: 1 } },
+                'Fonts': { type: 'folder', 'Arial.ttf': { type: 'file', size: 0 }, 'SegoeUI.ttf': { type: 'file', size: 0 } },
+                'System': { type: 'folder', 'Kernel.dll': { type: 'file', size: 0 }, 'Registry.reg': { type: 'file', size: 0 } },
+                'Boot': { type: 'folder', 'Bootloader.exe': { type: 'file', size: 0 }, 'Config.sys': { type: 'file', size: 0 } },
+                'Programs': { type: 'folder', 'Calc.exe': { type: 'file', size: 0 }, 'Notepad.exe': { type: 'file', size: 0 } },
+                'Drivers': { type: 'folder', 'Graphics.drv': { type: 'file', size: 0 }, 'Audio.drv': { type: 'file', size: 0 } },
+                'Config': { type: 'folder', 'Settings.ini': { type: 'file', size: 0 }, 'UserPrefs.cfg': { type: 'file', size: 0 } },
                 'Temp': { type: 'folder' },
-                'Logs': { type: 'folder', 'System.log': { type: 'file', size: 1 } },
+                'Logs': { type: 'folder', 'System.log': { type: 'file', size: 0 } },
                 'Resources': { type: 'folder', 'Icons': { type: 'folder' } },
-                'Security': { type: 'folder', 'Firewall.rules': { type: 'file', size: 1 } }
+                'Security': { type: 'folder', 'Firewall.rules': { type: 'file', size: 0 } }
             },
             'Users': {
                 type: 'folder',
@@ -409,7 +415,9 @@
     let selectedFile = null;
     const stateKey = 'html_os_state';
     let systemState = JSON.parse(localStorage.getItem(stateKey)) || { deleted: [] };
-    const diskTotals = { 'C:': 100000 }; // Total in KB
+    const diskTotals = { 'C:': 50 }; // Total in KB
+    const baseHTMLOS = 30;
+    const baseUser = 5;
     // === ПРОВЕРКА ЦЕЛОСТНОСТИ ===
     function checkSystemIntegrity() {
         if (systemState.deleted.includes('Fonts')) {
@@ -461,7 +469,7 @@
     function createTempFiles() {
         let temp = fs['C:']['HTML OS']['Temp'];
         for (let i = 1; i <= 5; i++) {
-            temp[`tmp${i}.tmp`] = { type: 'file', size: 1 };
+            temp[`tmp${i}.tmp`] = { type: 'file', size: 0 };
         }
     }
     // === НАВИГАЦИЯ ===
@@ -659,11 +667,13 @@
                 }
                 return sum;
             } else if (obj.type === 'file') {
-                return obj.size || 1;
+                return obj.size || 0;
             }
             return 0;
         }
-        return getSize(disk);
+        const numUsers = Object.keys(fs['C:']['Users']).filter(k => !['type', 'system'].includes(k)).length;
+        const base = baseHTMLOS + baseUser * numUsers;
+        return base + getSize(disk);
     }
     function renderExplorer() {
         const content = document.getElementById('explorerContent');
@@ -690,8 +700,7 @@
                 label.classList.add('file-name');
                 const occupied = calculateOccupied(name);
                 const total = diskTotals[name] || 0;
-                const free = total - occupied;
-                label.textContent = `${name} (занято ${occupied} KB / свободно ${free} KB / всего ${total} KB)`;
+                label.textContent = `${name} (${occupied} кб/50 кб)`;
                 div.appendChild(icon);
                 div.appendChild(label);
                 content.appendChild(div);
@@ -933,6 +942,10 @@
     }
     function setUrlAndLoad(url) {
         document.getElementById('browserAddress').value = url;
+        loadPage();
+    }
+    function goHome() {
+        document.getElementById('browserAddress').value = '';
         loadPage();
     }
     function startDownload(name, size, special) {
