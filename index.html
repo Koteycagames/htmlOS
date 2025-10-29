@@ -218,6 +218,13 @@
         /* Browser */
         #browserAddress { padding: 8px; background: #000; color: #0f0; font-family: monospace; font-size: 14px; border: none; width: 100%; }
         #browserContent { flex: 1; padding: 16px; background: #fff; color: #000; overflow: auto; }
+        #browserDownloads {
+            position: absolute; top: 0; right: 0; width: 200px; background: rgba(255,255,255,0.8); color: #000;
+            border-bottom-left-radius: 8px; padding: 8px; z-index: 10; display: none;
+        }
+        .download-item { margin-bottom: 8px; }
+        .download-progress { height: 4px; background: #ddd; }
+        .download-progress-bar { height: 100%; background: #0f0; width: 0%; }
     </style>
 </head>
 <body>
@@ -337,6 +344,7 @@
             </div>
         </div>
         <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
+        <div id="browserDownloads"></div>
         <div id="browserContent"></div>
     </div>
 </div>
@@ -682,7 +690,8 @@
                 label.classList.add('file-name');
                 const occupied = calculateOccupied(name);
                 const total = diskTotals[name] || 0;
-                label.textContent = `${name} (занято ${occupied} KB / всего ${total} KB)`;
+                const free = total - occupied;
+                label.textContent = `${name} (занято ${occupied} KB / свободно ${free} KB / всего ${total} KB)`;
                 div.appendChild(icon);
                 div.appendChild(label);
                 content.appendChild(div);
@@ -893,12 +902,6 @@
                 fileSize = 100;
                 special = 'strong_av';
                 break;
-            case 'http://weak-antivirus.com':
-                pageTitle = 'слабенький антивирус весом 5 кб который даже не обезвредит первый вирус';
-                fileName = 'weak-antivirus.exe';
-                fileSize = 5;
-                special = 'weak_av';
-                break;
             case 'http://cool-editor.fake':
                 pageTitle = 'крутой текстовый редактор';
                 fileName = 'editor.txt';
@@ -915,7 +918,7 @@
                 content.innerHTML = `<div style="padding: 20px;">Страница не найдена: ${url}</div>`;
                 return;
         }
-        content.innerHTML = `<h1>${pageTitle}</h1><button onclick="downloadFile('${fileName}', ${fileSize}, '${special}')">Скачать</button>`;
+        content.innerHTML = `<h1>${pageTitle}</h1><button onclick="startDownload('${fileName}', ${fileSize}, '${special}')">Скачать</button>`;
     }
     function showHome(content) {
         content.innerHTML = `
@@ -923,7 +926,6 @@
             <ul>
                 <li><a href="#" onclick="setUrlAndLoad('http://minecraft.fake')">майнкрафт бесплатно скачать без смс и регистрации</a></li>
                 <li><a href="#" onclick="setUrlAndLoad('http://antivirus.free')">антивирус бесплатно</a></li>
-                <li><a href="#" onclick="setUrlAndLoad('http://weak-antivirus.com')">слабенький антивирус весом 5 кб который даже не обезвредит первый вирус</a></li>
                 <li><a href="#" onclick="setUrlAndLoad('http://cool-editor.fake')">крутой текстовый редактор</a></li>
                 <li><a href="#" onclick="setUrlAndLoad('http://nothing-antivirus.com')">анти вирус бесплатно обезретит ничего</a></li>
             </ul>
@@ -933,7 +935,35 @@
         document.getElementById('browserAddress').value = url;
         loadPage();
     }
-    function downloadFile(name, size, special) {
+    function startDownload(name, size, special) {
+        const downloadsPanel = document.getElementById('browserDownloads');
+        downloadsPanel.style.display = 'block';
+        const item = document.createElement('div');
+        item.classList.add('download-item');
+        item.innerHTML = `${name} - 0%`;
+        const progress = document.createElement('div');
+        progress.classList.add('download-progress');
+        const bar = document.createElement('div');
+        bar.classList.add('download-progress-bar');
+        progress.appendChild(bar);
+        item.appendChild(progress);
+        downloadsPanel.appendChild(item);
+        let percent = 0;
+        const interval = setInterval(() => {
+            percent += 10;
+            item.innerHTML = `${name} - ${percent}%`;
+            bar.style.width = `${percent}%`;
+            if (percent >= 100) {
+                clearInterval(interval);
+                completeDownload(name, size, special);
+                setTimeout(() => {
+                    downloadsPanel.removeChild(item);
+                    if (downloadsPanel.children.length === 0) downloadsPanel.style.display = 'none';
+                }, 2000);
+            }
+        }, 200);
+    }
+    function completeDownload(name, size, special) {
         const downloads = fs['C:']['Users'][currentUser]['Загрузки'];
         downloads[name] = { type: 'file', size: size, special: special };
         if (special === 'troll') {
