@@ -95,19 +95,179 @@
 </head>
 <body>
 
-<!-- ЭКРАНЫ (как раньше) -->
-<div id="login" class="screen active">...</div>
-<div id="register" class="screen">...</div>
-<div id="main" class="screen">...</div>
-<div id="store" class="screen">...</div>
-<div id="blackscreen" class="screen">...</div>
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <h2>Вход</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Пароль">
+    <button onclick="login()">Войти</button>
+    <button onclick="goTo('register')">Регистрация</button>
+</div>
+
+<!-- REGISTER -->
+<div id="register" class="screen">
+    <h2>Регистрация</h2>
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="password" id="regPassword" placeholder="Пароль">
+    <button onclick="register()">Зарегистрироваться</button>
+    <button onclick="goTo('login')">Назад</button>
+</div>
+
+<!-- MAIN MENU -->
+<div id="main" class="screen">
+    <div>Монеты: <span id="coins">0</span></div>
+    <div>ОС: <span id="time_os">0</span> мин | Wi-Fi: <span id="wifi_time">0</span> мин</div>
+    <button onclick="enterOS()">Зайти в ОС</button>
+    <button onclick="goTo('store')">Купить</button>
+</div>
+
+<!-- STORE -->
+<div id="store" class="screen">
+    <h2>Магазин</h2>
+    <div>1 минута ОС - 10 монет</div>
+    <div>1 минута Бомж Wi-Fi - 20 монет</div>
+    <div>1 минута Средний Wi-Fi - 30 монет</div>
+    <div>1 минута Ultra fast - 50 монет</div>
+    <h3>Корзина:</h3>
+    <div id="cart"></div>
+    <button onclick="addToCart('os')">+1 мин ОС</button>
+    <button onclick="addToCart('bomj')">+1 мин Бомж</button>
+    <button onclick="addToCart('medium')">+1 мин Средний</button>
+    <button onclick="addToCart('ultra')">+1 мин Ultra</button>
+    <button onclick="checkout()">Оплатить</button>
+    <button onclick="goTo('main')">Назад</button>
+</div>
+
+<!-- ОС -->
+<div id="blackscreen" class="screen">
+    <button onclick="launchOS()">Запустить</button>
+    <button onclick="goTo('main')">Вернуться в меню</button>
+</div>
 <div id="delay1" class="screen"></div>
 <div id="nosignal" class="screen">NO SIGNAL</div>
 <div id="start" class="screen"><div id="logo"></div></div>
-<div id="user" class="screen">...</div>
-<div id="desktop" class="screen">...</div>
-<div id="shutdown" class="screen">...</div>
-<div id="wifiMenu">...</div>
+<div id="user" class="screen">
+    <div id="avatar">U</div>
+    <div id="userName">Гость</div>
+    <button id="loginBtn" onclick="goTo('desktop')">Войти</button>
+</div>
+
+<!-- ДЕСКТОП -->
+<div id="desktop" class="screen">
+    <div id="taskbar">
+        <div id="startBtn" onclick="toggleStartMenu()"></div>
+        <div id="timeLeft">Времени осталось: 0 мин</div>
+        <div id="wifiTime">Wi-Fi: 0 мин</div>
+        <div id="taskbar-apps"></div>
+        <div style="flex:1"></div>
+        <div id="wifiBtn" onclick="toggleWifiMenu()" style="width:40px;height:40px;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M12%2021l-1-2a7%207%200%200114%200l-1%202a5%205%200%2000-12%200zm-3-4a10%2010%200%200121%200l-1%202a8%208%200%2000-19%200l-1-2zm-3-4a13%2013%200%200127%200l-1%202a11%2011%200%2000-25%200l-1-2z%22%2F%3E%3C%2Fsvg%3E') center/24px no-repeat;border-radius:8px;cursor:pointer;margin-right:8px;"></div>
+        <div style="color:#aaa;font-size:12px;" id="clock">12:00</div>
+    </div>
+
+    <div id="startMenu">
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div class="tile" onclick="openApp('explorer')">Проводник</div>
+            <div class="tile" onclick="openApp('calc')">Калькулятор</div>
+            <div class="tile" onclick="openApp('notepad')">Блокнот</div>
+            <div class="tile" onclick="openApp('browser')">Браузер</div>
+            <div class="tile" onclick="goTo('shutdown')">Выключить</div>
+        </div>
+    </div>
+
+    <!-- ОКНА -->
+    <div id="explorer" class="app-window" style="top:10%;left:10%;width:700px;height:500px;">
+        <div class="win-title" onmousedown="dragStart(event,'explorer')">
+            <span>Проводник</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('explorer')">–</button>
+                <button onclick="toggleMaximize('explorer')">□</button>
+                <button onclick="closeApp('explorer')">×</button>
+            </div>
+        </div>
+        <div id="explorerPath">Компьютер</div>
+        <div id="explorerContent"></div>
+        <div id="explorerActions" style="display:none;">
+            <button onclick="deleteSelected()">Удалить</button>
+            <button onclick="renameSelected()">Переименовать</button>
+        </div>
+    </div>
+
+    <div id="calc" class="app-window" style="top:15%;left:15%;width:320px;height:420px;">
+        <div class="win-title" onmousedown="dragStart(event,'calc')">
+            <span>Калькулятор</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('calc')">–</button>
+                <button onclick="toggleMaximize('calc')">□</button>
+                <button onclick="closeApp('calc')">×</button>
+            </div>
+        </div>
+        <div id="calcDisplay">0</div>
+        <div class="calc-grid">
+            <div class="calc-btn" onclick="calc('C')">C</div>
+            <div class="calc-btn" onclick="calc('±')">±</div>
+            <div class="calc-btn" onclick="calc('%')">%</div>
+            <div class="calc-btn operator" onclick="calc('/')">/</div>
+            <div class="calc-btn" onclick="calc('7')">7</div>
+            <div class="calc-btn" onclick="calc('8')">8</div>
+            <div class="calc-btn" onclick="calc('9')">9</div>
+            <div class="calc-btn operator" onclick="calc('*')">×</div>
+            <div class="calc-btn" onclick="calc('4')">4</div>
+            <div class="calc-btn" onclick="calc('5')">5</div>
+            <div class="calc-btn" onclick="calc('6')">6</div>
+            <div class="calc-btn operator" onclick="calc('-')">-</div>
+            <div class="calc-btn" onclick="calc('1')">1</div>
+            <div class="calc-btn" onclick="calc('2')">2</div>
+            <div class="calc-btn" onclick="calc('3')">3</div>
+            <div class="calc-btn operator" onclick="calc('+')">+</div>
+            <div class="calc-btn" style="grid-column:span 2;" onclick="calc('0')">0</div>
+            <div class="calc-btn" onclick="calc('.')">.</div>
+            <div class="calc-btn operator" onclick="calc('=')">=</div>
+        </div>
+    </div>
+
+    <div id="notepad" class="app-window" style="top:18%;left:20%;width:500px;height:380px;">
+        <div class="win-title" onmousedown="dragStart(event,'notepad')">
+            <span>Блокнот</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('notepad')">–</button>
+                <button onclick="toggleMaximize('notepad')">□</button>
+                <button onclick="closeApp('notepad')">×</button>
+            </div>
+        </div>
+        <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
+    </div>
+
+    <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
+        <div class="win-title" onmousedown="dragStart(event,'browser')">
+            <span>Браузер</span>
+            <div class="win-controls">
+                <button onclick="minimizeApp('browser')">–</button>
+                <button onclick="toggleMaximize('browser')">□</button>
+                <button onclick="closeApp('browser')">×</button>
+            </div>
+        </div>
+        <div id="browserNav">
+            <input id="browserAddress" type="text" placeholder="Введите URL..." onkeydown="if(event.key==='Enter') loadPage();">
+            <button id="browserHomeBtn" onclick="goHome()">Домой</button>
+        </div>
+        <div id="browserDownloads"></div>
+        <div id="browserContent"></div>
+    </div>
+</div>
+
+<!-- ВЫКЛЮЧЕНИЕ -->
+<div id="shutdown" class="screen">
+    <div id="shutdownLogo"></div>
+    <div id="shutdownText">Завершение работы</div>
+    <div id="shutdownDots"><span>.</span><span>.</span><span>.</span></div>
+</div>
+
+<!-- Wi-Fi -->
+<div id="wifiMenu">
+    <div class="wifi-item" onclick="connectWifi('bomj')">Бомж Wi-Fi</div>
+    <div class="wifi-item" onclick="connectWifi('medium')">Средний Wi-Fi</div>
+    <div class="wifi-item" onclick="connectWifi('ultra')">Ultra fast</div>
+</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -116,7 +276,15 @@
 
 <script>
 /* ==================== FIREBASE ==================== */
-const firebaseConfig = { /* твой конфиг */ };
+const firebaseConfig = {
+  apiKey: "AIzaSyB2wR10RWpKOaGPpcoYFvfh1hnyHnM-zRY",
+  authDomain: "htmlos-5335c.firebaseapp.com",
+  databaseURL: "https://htmlos-5335c-default-rtdb.firebaseio.com",
+  projectId: "htmlos-5335c",
+  storageBucket: "htmlos-5335c.firebasestorage.app",
+  messagingSenderId: "601743333046",
+  appId: "1:601743333046:web:ca33341b9c7cf4cdb1f817"
+};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -127,8 +295,9 @@ let cart = {os:0,bomj:0,medium:0,ultra:0};
 let previousScreen = '';
 let connected = false, currentNetwork = '';
 let currentUserName = "Гость";
-
-/* ==================== FS & SYSTEM ==================== */
+let currentPath = [], selectedFile = null;
+const stateKey = 'html_os_state';
+let systemState = JSON.parse(localStorage.getItem(stateKey)) || {deleted:[]};
 const fs = {
     'C:':{
         'HTML OS':{type:'folder',system:true,
@@ -146,21 +315,8 @@ const fs = {
         'Users':{type:'folder',system:true}
     }
 };
-const stateKey = 'html_os_state';
-let systemState = JSON.parse(localStorage.getItem(stateKey)) || {deleted:[]};
 
-/* ==================== СИСТЕМНАЯ ПРОВЕРКА ==================== */
-function checkSystemIntegrity(){
-    if(systemState.deleted.includes('Boot')){
-        document.getElementById('bsod-screen').style.display = 'flex';
-        return false;
-    }
-    return true;
-}
-
-/* ==================== ОСТАЛЬНОЕ (авторизация, таймеры, Wi-Fi, навигация, проводник и т.д.) ==================== */
-// Весь код из предыдущего сообщения (без ошибок)
-
+/* ==================== АВТОРИЗАЦИЯ ==================== */
 auth.onAuthStateChanged(u => {
     if (u) {
         currentUser = u;
@@ -174,8 +330,290 @@ auth.onAuthStateChanged(u => {
     }
 });
 
-/* ... (весь остальной код как в последнем сообщении) ... */
+function login() {
+    const e = document.getElementById('loginEmail').value;
+    const p = document.getElementById('loginPassword').value;
+    auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+}
+function register() {
+    const e = document.getElementById('regEmail').value;
+    const p = document.getElementById('regPassword').value;
+    auth.createUserWithEmailAndPassword(e, p)
+        .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_bomj:0,time_medium:0,time_ultra:0}))
+        .catch(err => alert(err.message));
+}
+function loadUserData(uid) {
+    db.ref('users/' + uid + '/coins').on('value', s => document.getElementById('coins').textContent = s.val()||0);
+    db.ref('users/' + uid + '/time_os').on('value', s => {
+        document.getElementById('time_os').textContent = s.val()||0;
+        document.getElementById('timeLeft').textContent = `Времени осталось: ${s.val()||0} мин`;
+    });
+    const updateWifiTime = () => {
+        Promise.all([
+            db.ref('users/' + uid + '/time_bomj').once('value').then(s => s.val()||0),
+            db.ref('users/' + uid + '/time_medium').once('value').then(s => s.val()||0),
+            db.ref('users/' + uid + '/time_ultra').once('value').then(s => s.val()||0)
+        ]).then(([b,m,u]) => {
+            const total = b + m + u;
+            document.getElementById('wifi_time').textContent = total;
+            document.getElementById('wifiTime').textContent = `Wi-Fi: ${total} мин`;
+        });
+    };
+    updateWifiTime();
+    db.ref('users/' + uid).on('child_changed', updateWifiTime);
+}
 
+/* ==================== МАГАЗИН ==================== */
+function addToCart(type){cart[type]++;updateCart();}
+function updateCart(){
+    const c=document.getElementById('cart');
+    c.innerHTML = '';
+    for(let k in cart)if(cart[k]>0)c.innerHTML += `${k.toUpperCase()}: ${cart[k]} мин<br>`;
+}
+function checkout(){
+    if(!currentUser) return;
+    const uid = currentUser.uid;
+    const cost = cart.os*10 + cart.bomj*20 + cart.medium*30 + cart.ultra*50;
+    db.ref('users/' + uid + '/coins').once('value').then(snap => {
+        const coins = snap.val() || 0;
+        if(coins < cost){alert('Недостаточно монет');return;}
+        db.ref('users/' + uid + '/coins').set(coins - cost);
+        db.ref('users/' + uid + '/time_os').transaction(t => (t||0) + cart.os);
+        db.ref('users/' + uid + '/time_bomj').transaction(t => (t||0) + cart.bomj);
+        db.ref('users/' + uid + '/time_medium').transaction(t => (t||0) + cart.medium);
+        db.ref('users/' + uid + '/time_ultra').transaction(t => (t||0) + cart.ultra);
+        cart = {os:0,bomj:0,medium:0,ultra:0};
+        updateCart();
+        alert('Покупка завершена');
+    });
+}
+
+/* ==================== ВХОД В ОС ==================== */
+function enterOS(){
+    if(!currentUser) return;
+    goTo('blackscreen');
+}
+
+/* ==================== ЗАПУСК ОС ==================== */
+function launchOS(){
+    db.ref('users/' + currentUser.uid + '/time_os').once('value').then(s => {
+        const time = s.val() || 0;
+        if(time > 0){
+            previousScreen = 'delay1';
+            goTo('delay1');
+        } else {
+            previousScreen = 'nosignal_no_time';
+            goTo('nosignal');
+            setTimeout(() => goTo('blackscreen'), 15000);
+        }
+    });
+}
+
+/* ==================== ТАЙМЕРЫ ==================== */
+function startOSTimer(){
+    if (timeInterval) clearInterval(timeInterval);
+    timeInterval = setInterval(() => {
+        db.ref('users/' + currentUser.uid + '/time_os').transaction(t => {
+            if((t||0) <= 0){ clearInterval(timeInterval); goTo('shutdown'); return 0; }
+            return (t||0) - 1;
+        });
+    }, 60000);
+}
+function startWifiTimer(){
+    if (wifiInterval) clearInterval(wifiInterval);
+    const key = { 'Бомж Wi-Fi': 'bomj', 'Средний Wi-Fi': 'medium', 'Ultra fast': 'ultra' }[currentNetwork];
+    if(!key) return;
+    wifiInterval = setInterval(() => {
+        db.ref('users/' + currentUser.uid + '/time_' + key).transaction(t => {
+            if((t||0) <= 0){
+                clearInterval(wifiInterval);
+                connected = false;
+                currentNetwork = '';
+                document.querySelectorAll('.wifi-item').forEach(i => i.classList.remove('connected'));
+                return 0;
+            }
+            return (t||0) - 1;
+        });
+    }, 60000);
+}
+
+/* ==================== Wi-Fi ==================== */
+function autoConnectWifi(){
+    const types = {bomj: 'Бомж Wi-Fi', medium: 'Средний Wi-Fi', ultra: 'Ultra fast'};
+    for(let key in types){
+        db.ref('users/' + currentUser.uid + '/time_' + key).once('value').then(s => {
+            if((s.val()||0) > 0 && !connected){
+                connected = true;
+                currentNetwork = types[key];
+                document.querySelectorAll('.wifi-item').forEach(i => i.classList.remove('connected'));
+                document.querySelector(`.wifi-item[onclick="connectWifi('${key}')"]`).classList.add('connected');
+                startWifiTimer();
+            }
+        });
+    }
+}
+function connectWifi(net){
+    const map = {bomj: 'time_bomj', medium: 'time_medium', ultra: 'time_ultra'};
+    const key = map[net];
+    if(!key) return;
+    db.ref('users/' + currentUser.uid + '/' + key).once('value').then(s => {
+        if((s.val()||0) > 0){
+            connected = true;
+            currentNetwork = {bomj: 'Бомж Wi-Fi', medium: 'Средний Wi-Fi', ultra: 'Ultra fast'}[net];
+            document.querySelectorAll('.wifi-item').forEach(i => i.classList.remove('connected'));
+            event.target.classList.add('connected');
+            startWifiTimer();
+        } else alert('Нет времени');
+    });
+}
+
+/* ==================== СИСТЕМНАЯ ПРОВЕРКА ==================== */
+function checkSystemIntegrity(){
+    if(systemState.deleted.includes('Boot')){
+        document.getElementById('bsod-screen').style.display = 'flex';
+        return false;
+    }
+    return true;
+}
+
+/* ==================== ПРОВОДНИК ==================== */
+function updateUserFolder(name) {
+    if (!fs['C:']['Users'][name]) {
+        fs['C:']['Users'][name] = {type:'folder',
+            'Загрузки':{type:'folder'}, 'Документы':{type:'folder'}, 'Картинки':{type:'folder'}, 'Видео':{type:'folder'}
+        };
+    }
+}
+function calculateOccupied(d){
+    function sz(o){
+        if(o.type === 'folder'){
+            let s = 0;
+            for(let k in o){
+                if(k === 'type' || k === 'system' || systemState.deleted.includes(k)) continue;
+                s += sz(o[k]);
+            }
+            return s;
+        }
+        return o.type === 'file' ? o.size || 0 : 0;
+    }
+    const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
+    return 30 + 5 * users + sz(fs[d]);
+}
+function renderExplorer(){
+    const c = document.getElementById('explorerContent'); c.innerHTML = '';
+    const root = currentPath.length === 0;
+    let cur;
+    if(root){
+        Object.keys(fs).forEach(n => {
+            if(systemState.deleted.includes(n)) return;
+            const div = document.createElement('div'); div.className = 'file-item';
+            div.onclick = () => selectFile(n, div);
+            div.ondblclick = () => { currentPath = [n]; updatePath(); renderExplorer(); };
+            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = 'DISK';
+            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (${calculateOccupied(n)} кб/50 кб)`;
+            div.append(ic, lb); c.append(div);
+        });
+    } else {
+        cur = fs[currentPath[0]];
+        for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
+        for(let n in cur){
+            if(systemState.deleted.includes(n)) continue;
+            const it = cur[n];
+            if(it.type !== 'folder' && it.type !== 'file') continue;
+            const div = document.createElement('div'); div.className = 'file-item';
+            div.onclick = () => selectFile(n, div);
+            div.ondblclick = () => {
+                if(it.type === 'folder'){ currentPath.push(n); updatePath(); renderExplorer(); }
+                else if(it.type === 'file'){
+                    if(n.endsWith('.txt')) openApp('notepad', {content: it.content || ''});
+                }
+            };
+            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = it.type === 'folder' ? 'FOLDER' : 'FILE';
+            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (${it.size||0} KB)`;
+            div.append(ic, lb); c.append(div);
+        }
+    }
+    document.getElementById('explorerActions').style.display = selectedFile ? 'flex' : 'none';
+}
+function updatePath(){ document.getElementById('explorerPath').textContent = currentPath.length === 0 ? 'Компьютер' : currentPath.join('\\\\'); }
+function selectFile(n, d){ document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; document.getElementById('explorerActions').style.display = 'flex'; }
+function deleteSelected(){ if(!selectedFile) return; let cur = currentPath.length === 0 ? fs : fs[currentPath[0]]; for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]]; if(cur[selectedFile].system && !confirm('Системный файл. Удалить?')) return; delete cur[selectedFile]; systemState.deleted.push(selectedFile); selectedFile = null; renderExplorer(); }
+function renameSelected(){ if(!selectedFile) return; const nn = prompt('Новое имя:'); if(!nn) return; let cur = currentPath.length === 0 ? fs : fs[currentPath[0]]; for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]]; cur[nn] = cur[selectedFile]; delete cur[selectedFile]; selectedFile = null; renderExplorer(); }
+
+/* ==================== БРАУЗЕР ==================== */
+function loadPage(){
+    const url = document.getElementById('browserAddress').value.trim();
+    const cont = document.getElementById('browserContent');
+    if(!connected){ cont.innerHTML = '<p style="color:#f00;text-align:center;">Нет интернета</p>'; return; }
+    let page, file, size;
+    switch(url){
+        case 'http://minecraft.fake': page = 'майнкрафт бесплатно'; file = 'minecraft.exe'; size = 5; break;
+        default: cont.innerHTML = `<p>404: ${url}</p>`; return;
+    }
+    cont.innerHTML = `<h1>${page}</h1><button onclick="startDownload('${file}',${size})">Скачать</button>`;
+}
+function startDownload(name, size){
+    const panel = document.getElementById('browserDownloads'); panel.style.display = 'block';
+    const item = document.createElement('div'); item.className = 'download-item';
+    item.innerHTML = `${name} - 0%`;
+    const prog = document.createElement('div'); prog.className = 'download-progress';
+    const bar = document.createElement('div'); bar.className = 'download-progress-bar';
+    prog.appendChild(bar); item.appendChild(prog); panel.appendChild(item);
+    let p = 0; const int = setInterval(() => { p += 10; item.innerHTML = `${name} - ${p}%`; bar.style.width = p + '%'; if(p >= 100){ clearInterval(int); completeDownload(name, size); setTimeout(() => { panel.removeChild(item); if(!panel.children.length) panel.style.display = 'none'; }, 2000); }}, 200);
+}
+function completeDownload(name, size){
+    updateUserFolder(currentUserName);
+    const down = fs['C:']['Users'][currentUserName]['Загрузки'];
+    down[name] = {type:'file', size:size};
+    alert(`Скачано ${name}`);
+    if(document.getElementById('explorer').classList.contains('open')) renderExplorer();
+}
+function goHome(){ document.getElementById('browserAddress').value = ''; loadPage(); }
+
+/* ==================== ОКНА ==================== */
+function openApp(id, params={}){
+    const win = document.getElementById(id);
+    win.classList.add('open');
+    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
+    if(id === 'browser') loadPage();
+    if(id === 'notepad' && params.content !== undefined) document.getElementById('notepadText').value = params.content;
+    updateTaskbar(); bringToFront(id);
+}
+function closeApp(id){ document.getElementById(id).classList.remove('open'); updateTaskbar(); }
+function minimizeApp(id){ document.getElementById(id).classList.remove('open'); updateTaskbar(); }
+function toggleMaximize(id){ const w = document.getElementById(id); w.classList.toggle('maximized'); }
+function bringToFront(id){ document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = 200); document.getElementById(id).style.zIndex = 201; }
+
+/* ==================== ПЕРЕТАСКИВАНИЕ ==================== */
+let dragId, dragX, dragY;
+function dragStart(e,id){ dragId = id; dragX = e.clientX - document.getElementById(id).getBoundingClientRect().left; dragY = e.clientY - document.getElementById(id).getBoundingClientRect().top; document.addEventListener('mousemove', dragMove); document.addEventListener('mouseup', dragEnd); }
+function dragMove(e){ const w = document.getElementById(dragId); w.style.left = (e.clientX - dragX) + 'px'; w.style.top = (e.clientY - dragY) + 'px'; }
+function dragEnd(){ document.removeEventListener('mousemove', dragMove); document.removeEventListener('mouseup', dragEnd); }
+
+/* ==================== ПАНЕЛЬ ЗАДАЧ ==================== */
+function updateTaskbar(){
+    const a = document.getElementById('taskbar-apps'); a.innerHTML = '';
+    ['explorer','calc','notepad','browser'].forEach(id => {
+        if(document.getElementById(id).classList.contains('open')){
+            const b = document.createElement('div'); b.className = 'taskbar-app';
+            b.textContent = id.charAt(0).toUpperCase() + id.slice(1);
+            b.onclick = () => bringToFront(id);
+            a.appendChild(b);
+        }
+    });
+}
+
+/* ==================== ПУСК ==================== */
+function toggleStartMenu(){
+    const m = document.getElementById('startMenu');
+    m.classList.toggle('open');
+}
+function toggleWifiMenu(){
+    const m = document.getElementById('wifiMenu');
+    m.classList.toggle('open');
+}
+
+/* ==================== НАВИГАЦИЯ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const el = document.getElementById(id);
@@ -186,13 +624,18 @@ function goTo(id) {
         if (previousScreen === 'delay1') setTimeout(() => goTo('start'), 3000);
     }
     if (id === 'start') { 
-        if(!checkSystemIntegrity()) return; // ← Теперь определена!
+        if(!checkSystemIntegrity()) return;
         setTimeout(() => goTo('user'), 3000); 
     }
     if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); }
     if (id === 'shutdown') setTimeout(() => { localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, 5000);
 }
 
+/* ==================== ЧАСЫ ==================== */
+setInterval(() => { const n = new Date(); document.getElementById('clock').textContent = n.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'}); }, 1000);
+
+/* ==================== ИНИЦИАЛИЗАЦИЯ ==================== */
+goTo('login');
 </script>
 </body>
 </html>
