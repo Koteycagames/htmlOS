@@ -14,7 +14,7 @@
         #login input, #register input { width: 280px; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #0f0; color: #0f0; border-radius: 6px; font-size: 16px; }
         #login button, #register button { width: 280px; padding: 12px; margin: 8px 0; background: #0f0; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
         #login button:hover, #register button:hover { background: #0c0; }
-        #main { gap: 20px; align-items: flex-start; padding: 20px; }
+        #main { gap: 20px; }
         #main div { font-size: 24px; }
         #main button { padding: 16px 40px; font-size: 20px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
         #main button:hover { background: #0c0; }
@@ -214,7 +214,7 @@
         </div>
         <div id="explorerPath">Компьютер</div>
         <div id="explorerContent"></div>
-        <div id="explorerActions">
+        <div id="explorerActions" style="display:none;">
             <button onclick="createNewFolder()">Новая папка</button>
             <button onclick="createNewTextFile()">Новый текст. файл</button>
             <button onclick="deleteSelected()">Удалить</button>
@@ -368,16 +368,15 @@ let fs = {
             'Temp':{type:'folder'},
             'Logs':{type:'folder','System.log':{type:'file',size:0}},
             'Resources':{type:'folder','Icons':{type:'folder'}},
-            'Security':{type:'folder','Firewall.rules':{type:'file',size:0}},
-            'Desktop':{type:'folder'}
+            'Security':{type:'folder','Firewall.rules':{type:'file',size:0}}
         },
         'Users':{type:'folder',system:true}
     }
 };
 const virusFiles = ['gift.exe', 'hack.exe', 'crack.exe', 'money.exe', 'scan.exe', 'update.exe', 'premium.exe', 'cheat.exe', 'torrent.exe', 'vpn.exe'];
-let msgAuth = auth; // Используем тот же auth для мессенджера, но можно отдельный
 let msgUser = null;
 let currentChatTarget = null;
+let contextTarget = 'explorer';
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -434,7 +433,6 @@ auth.onAuthStateChanged(u => {
         document.getElementById('userName').textContent = currentUserName;
         loadUserData(u.uid);
         loadUserFiles();
-        updateUserFolder(currentUserName);
         goTo('main');
     } else {
         currentUser = null;
@@ -453,6 +451,8 @@ function saveUserFiles() {
     if (currentUserName && fs['C:']['Users'][currentUserName]) {
         localStorage.setItem('user_files_' + currentUserName, JSON.stringify(fs['C:']['Users'][currentUserName]));
     }
+    if (document.getElementById('desktop').classList.contains('active')) renderDesktop();
+    if (document.getElementById('explorer').classList.contains('open')) renderExplorer();
 }
 /* NO SIGNAL CMD */
 document.addEventListener('keydown', (e) => {
@@ -497,15 +497,16 @@ function removeViruses() {
     db.ref('users/' + currentUser.uid + '/coins').transaction(c => {
         if ((c || 0) >= 400) {
             const userFolder = fs['C:']['Users'][currentUserName];
-            for (let folder in userFolder) {
-                if (userFolder[folder].type === 'folder') {
-                    for (let file in userFolder[folder]) {
-                        if (virusFiles.includes(file)) {
-                            delete userFolder[folder][file];
-                        }
+            function removeFromFolder(folder) {
+                for (let key in folder) {
+                    if (folder[key].type === 'folder') {
+                        removeFromFolder(folder[key]);
+                    } else if (virusFiles.includes(key)) {
+                        delete folder[key];
                     }
                 }
             }
+            removeFromFolder(userFolder);
             saveUserFiles();
             alert('Вирусы удалены!');
             return (c || 0) - 400;
@@ -516,25 +517,6 @@ function removeViruses() {
     });
 }
 /* МЕССЕНДЖЕР */
-function openApp(id, params={}) {
-    const win = document.getElementById(id);
-    win.classList.remove('minimized');
-    win.style.display = 'flex';
-    win.classList.add('open');
-    if (id === 'explorer') { currentPath = []; updatePath(); renderExplorer(); }
-    if (id === 'browser') goHome();
-    if (id === 'notepad' && params.file) {
-        document.getElementById('notepadText').value = params.content || '';
-        document.getElementById('notepad').dataset.file = params.file;
-        document.getElementById('notepad').dataset.path = params.path;
-    }
-    if (id === 'messenger') { 
-        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex'; 
-        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
-        if (msgUser) listenForMessages(); 
-    }
-    updateTaskbar(); bringToFront(id);
-}
 function msgRegister() {
     const username = document.getElementById('msgUsername').value;
     const password = document.getElementById('msgPassword').value;
@@ -622,7 +604,7 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     const cont = document.getElementById('browserContent');
     if(!connected){ cont.innerHTML = '<p style="color:#f00;text-align:center;">Нет интернета</p>'; return; }
     if(url === '' || url === 'home') { goHome(); return; }
-    let page = '', file = '', size = 0, isVirus = false;
+    let page = '', file = '', size = 0;
     switch(url){
         case 'http://news.html': page = 'Новости'; cont.innerHTML = `<h1>${page}</h1><p>Последние новости из мира...</p>`; return;
         case 'http://weather.html': page = 'Погода'; cont.innerHTML = `<h1>${page}</h1><p>Сегодня солнечно...</p>`; return;
@@ -683,10 +665,27 @@ function completeDownload(name, size){
         alert(`Скачано ${name}`);
     }
     saveUserFiles();
-    if(document.getElementById('explorer').classList.contains('open')) renderExplorer();
-    renderDesktop();
 }
 /* ОКНА */
+function openApp(id, params={}){
+    const win = document.getElementById(id);
+    win.classList.remove('minimized');
+    win.style.display = 'flex';
+    win.classList.add('open');
+    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
+    if(id === 'browser') goHome();
+    if(id === 'notepad' && params.content !== undefined) {
+        document.getElementById('notepadText').value = params.content || '';
+        document.getElementById('notepad').dataset.file = params.file;
+        document.getElementById('notepad').dataset.path = params.path;
+    }
+    if(id === 'messenger'){ 
+        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex'; 
+        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
+        if (msgUser) listenForMessages(); 
+    }
+    updateTaskbar(); bringToFront(id);
+}
 function closeApp(id){
     const win = document.getElementById(id);
     win.classList.remove('open');
@@ -771,7 +770,7 @@ function calculateOccupied(d){
         }
         return o.type === 'file' ? o.size || 0 : 0;
     }
-    const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
+    const users = Object.keys(fs['C:']['Users']).length;
     return 30 + 5 * users + sz(fs[d]);
 }
 function calculateFree(d){
@@ -780,6 +779,7 @@ function calculateFree(d){
 function renderExplorer(){
     const c = document.getElementById('explorerContent'); c.innerHTML = '';
     const root = currentPath.length === 0;
+    document.getElementById('explorerActions').style.display = root ? 'none' : 'flex';
     let cur;
     if(root){
         Object.keys(fs).forEach(n => {
@@ -832,10 +832,9 @@ function renderExplorer(){
             div.append(ic, lb); c.append(div);
         }
     }
-    document.getElementById('explorerActions').style.display = 'flex';
 }
 function updatePath(){ document.getElementById('explorerPath').textContent = currentPath.length === 0 ? 'Компьютер' : currentPath.join('\\\\'); }
-function selectFile(n, d){ document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
+function selectFile(n, d){ document.querySelectorAll('.file-item, .desktop-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
 function deleteSelected(){ 
     if(!selectedFile) return; 
     let cur = getCurrentFolder();
@@ -843,9 +842,9 @@ function deleteSelected(){
     delete cur[selectedFile]; 
     systemState.deleted.push(selectedFile); 
     selectedFile = null; 
-    renderExplorer(); 
+    if (contextTarget === 'explorer') renderExplorer(); 
+    if (contextTarget === 'desktop') renderDesktop(); 
     saveUserFiles(); 
-    renderDesktop(); 
 }
 function renameSelected(){ 
     if(!selectedFile) return; 
@@ -855,30 +854,36 @@ function renameSelected(){
     cur[nn] = cur[selectedFile]; 
     delete cur[selectedFile]; 
     selectedFile = null; 
-    renderExplorer(); 
+    if (contextTarget === 'explorer') renderExplorer(); 
+    if (contextTarget === 'desktop') renderDesktop(); 
     saveUserFiles(); 
-    renderDesktop(); 
 }
 function createNewFolder() {
     const name = prompt('Имя папки:') || 'Новая папка';
     let cur = getCurrentFolder();
+    if (cur[name]) return alert('Имя уже существует');
     cur[name] = {type: 'folder', size: 1};
-    renderExplorer();
+    if (contextTarget === 'explorer') renderExplorer(); 
+    if (contextTarget === 'desktop') renderDesktop(); 
     saveUserFiles();
-    renderDesktop();
 }
 function createNewTextFile() {
     const name = prompt('Имя файла:') || 'Новый текст.txt';
     let cur = getCurrentFolder();
+    if (cur[name]) return alert('Имя уже существует');
     cur[name] = {type: 'file', size: 1, content: ''};
-    renderExplorer();
+    if (contextTarget === 'explorer') renderExplorer(); 
+    if (contextTarget === 'desktop') renderDesktop(); 
     saveUserFiles();
-    renderDesktop();
 }
 function getCurrentFolder() {
-    let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
-    for (let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
-    return cur;
+    if (contextTarget === 'desktop') {
+        return fs['C:']['Users'][currentUserName]['Desktop'];
+    } else {
+        let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
+        for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
+        return cur;
+    }
 }
 function updateFileSize() {
     const text = document.getElementById('notepadText').value;
@@ -895,31 +900,22 @@ function updateFileSize() {
 function saveNotepadContent() {
     updateFileSize();
     saveUserFiles();
-    renderExplorer();
-    renderDesktop();
-}
-function showProperties() {
-    if (!selectedFile) return;
-    let cur = getCurrentFolder();
-    const item = cur[selectedFile];
-    let props = `Имя: ${selectedFile}\nТип: ${item.type}\nРазмер: ${item.size || 0} KB`;
-    alert(props);
 }
 /* РАБОЧИЙ СТОЛ */
 function renderDesktop() {
     const c = document.getElementById('desktop-icons'); c.innerHTML = '';
-    const desktop = fs['C:']['Users'][currentUserName]['Desktop'] || {};
+    const desktop = fs['C:']['Users'][currentUserName]['Desktop'] || {type:'folder', size:1};
     for (let n in desktop) {
         if (systemState.deleted.includes(n)) continue;
         const it = desktop[n];
         if (it.type !== 'folder' && it.type !== 'file') continue;
         const div = document.createElement('div'); div.className = 'desktop-item';
         div.dataset.name = n;
-        div.onclick = () => selectDesktopFile(n, div);
+        div.onclick = () => selectFile(n, div);
         div.ondblclick = () => {
             if (it.type === 'folder') { currentPath = ['C:', 'Users', currentUserName, 'Desktop', n]; openApp('explorer'); }
             else if (it.type === 'file' && n.endsWith('.txt')) {
-                openApp('notepad', {file: n, path: ['C:', 'Users', currentUserName, 'Desktop'].join('\\'), content: it.content || ''});
+                openApp('notepad', {file: n, path: 'C:\\Users\\' + currentUserName + '\\Desktop', content: it.content || ''});
             } else if (it.type === 'file' && n.endsWith('.exe')) {
                 if (virusFiles.includes(n)) {
                     document.body.classList.add('flicker');
@@ -941,21 +937,30 @@ function renderDesktop() {
         div.append(ic, lb); c.append(div);
     }
 }
-function selectDesktopFile(n, d) { document.querySelectorAll('.desktop-item').forEach(i => i.classList.remove('selected')); d.classList.add('selected'); selectedFile = n; }
 /* КОНТЕКСТНОЕ МЕНЮ */
 document.addEventListener('contextmenu', e => {
     e.preventDefault();
     const menu = document.getElementById('contextMenu');
     menu.style.left = e.pageX + 'px';
     menu.style.top = e.pageY + 'px';
-    menu.style.display = 'block';
-    if (e.target.closest('#desktop-icons') || e.target.closest('#desktop') || e.target.closest('#explorerContent')) {
-        // Показываем меню
+    if (e.target.closest('#explorerContent')) {
+        contextTarget = 'explorer';
+        menu.style.display = 'block';
+    } else if (e.target.closest('#desktop-icons') || (e.target.closest('#desktop') && !e.target.closest('.app-window'))) {
+        contextTarget = 'desktop';
+        menu.style.display = 'block';
     } else {
         menu.style.display = 'none';
     }
 });
 document.addEventListener('click', () => document.getElementById('contextMenu').style.display = 'none');
+function showProperties() {
+    if (!selectedFile) return;
+    let cur = getCurrentFolder();
+    const item = cur[selectedFile];
+    let props = `Имя: ${selectedFile}\nТип: ${item.type}\nРазмер: ${item.size || 0} KB`;
+    alert(props);
+}
 /* КАЛЬКУЛЯТОР */
 let calcMemory = '0', calcOperator = '', calcWaiting = false;
 function calc(btn){
@@ -988,14 +993,17 @@ function calc(btn){
 function updateTaskbar(){
     const a = document.getElementById('taskbar-apps'); a.innerHTML = '';
     document.querySelectorAll('.app-window').forEach(win => {
-        if(win.classList.contains('open')){
+        if(win.classList.contains('open') && !win.classList.contains('minimized')){
+            const b = document.createElement('div'); b.className = 'taskbar-app';
+            b.textContent = win.querySelector('.win-title span').textContent;
+            b.onclick = () => bringToFront(win.id);
+            a.appendChild(b);
+        } else if (win.classList.contains('minimized')) {
             const b = document.createElement('div'); b.className = 'taskbar-app';
             b.textContent = win.querySelector('.win-title span').textContent;
             b.onclick = () => {
-                if(win.classList.contains('minimized')){
-                    win.classList.remove('minimized');
-                    win.style.display = 'flex';
-                }
+                win.classList.remove('minimized');
+                win.style.display = 'flex';
                 bringToFront(win.id);
             };
             a.appendChild(b);
@@ -1076,7 +1084,7 @@ function connectWifi(net){
 function checkSystemIntegrity(){
     if(systemState.deleted.includes('Boot')){
         const bsod = document.getElementById('bsod-screen');
-        if (bsod) bsod.style.display = 'flex';
+        bsod.style.display = 'flex';
         return false;
     }
     return true;
