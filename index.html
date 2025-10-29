@@ -397,9 +397,6 @@ auth.onAuthStateChanged(u => {
     }
 });
 
-/* ==================== ОСТАЛЬНОЕ — В ПОРЯДКЕ ==================== */
-// (все остальные функции — как в предыдущем коде)
-
 function loadUserFiles() {
     const saved = localStorage.getItem('user_files_' + currentUserName);
     if (saved) {
@@ -456,14 +453,7 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     const cont = document.getElementById('browserContent');
     if(!connected){ cont.innerHTML = '<p style="color:#f00;text-align:center;">Нет интернета</p>'; return; }
     if(url === '' || url === 'home') { goHome(); return; }
-    let page, file, size;
-    switch(url){
-        case 'http://minecraft.fake': page = 'майнкрафт бесплатно'; file = 'minecraft.exe'; size = 5; break;
-        case 'http://youtube.fake': page = 'видео'; file = 'video.mp4'; size = 10; break;
-        case 'http://vk.fake': page = 'соцсеть'; file = 'vk.apk'; size = 3; break;
-        default: cont.innerHTML = `<p>404: ${url}</p>`; return;
-    }
-    cont.innerHTML = `<h1>Welcome to ${page}</h1><button onclick="startDownload('${file}',${size})">Скачать</button>`;
+    cont.innerHTML = `<p>404: ${url}</p>`;
 }
 function startDownload(name, size){
     const panel = document.getElementById('browserDownloads'); panel.style.display = 'block';
@@ -493,7 +483,13 @@ function openApp(id, params={}){
     if(id === 'notepad' && params.content !== undefined) document.getElementById('notepadText').value = params.content;
     updateTaskbar(); bringToFront(id);
 }
-function closeApp(id){ document.getElementById(id).classList.remove('open'); updateTaskbar(); }
+function closeApp(id){ 
+    const win = document.getElementById(id);
+    win.style.display = 'none'; 
+    win.classList.remove('open'); 
+    win.classList.remove('maximized'); 
+    updateTaskbar(); 
+}
 function minimizeApp(id){ document.getElementById(id).style.display = 'none'; updateTaskbar(); }
 function toggleMaximize(id){ const w = document.getElementById(id); w.classList.toggle('maximized'); }
 function bringToFront(id){ document.querySelectorAll('.app-window').forEach(w => w.style.zIndex = 200); document.getElementById(id).style.zIndex = 201; }
@@ -567,18 +563,19 @@ let calcMemory = '0', calcOperator = '', calcWaiting = false;
 function calc(btn){
     const display = document.getElementById('calcDisplay');
     if(btn === 'C'){ calcMemory = '0'; calcOperator = ''; calcWaiting = false; display.textContent = '0'; return; }
+    if(btn === '±'){ display.textContent = (parseFloat(display.textContent) * -1).toString(); return; }
+    if(btn === '%'){ display.textContent = (parseFloat(display.textContent) / 100).toString(); return; }
     if(btn === '='){
-        if(calcWaiting && calcOperator){
-            calcMemory = eval(`${calcMemory} ${calcOperator} ${display.textContent}`).toString();
-            display.textContent = calcMemory;
+        if(calcOperator){
+            display.textContent = eval(`${calcMemory} ${calcOperator} ${display.textContent}`).toString();
             calcWaiting = false;
             calcOperator = '';
         }
         return;
     }
     if(['+','-','*','/'].includes(btn)){
-        if(!calcWaiting) calcMemory = display.textContent;
-        calcOperator = btn === '*' ? '*' : btn === '/' ? '/' : btn;
+        calcMemory = display.textContent;
+        calcOperator = btn;
         calcWaiting = true;
         return;
     }
