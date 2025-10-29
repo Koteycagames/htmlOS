@@ -537,7 +537,14 @@ function completeDownload(name, size){
     updateUserFolder(currentUserName);
     const down = fs['C:']['Users'][currentUserName]['Загрузки'];
     down[name] = {type:'file', size:size};
-    alert(`Скачано ${name}`);
+    const virusFiles = ['gift.exe', 'hack.exe', 'crack.exe', 'money.exe', 'scan.exe', 'update.exe', 'premium.exe', 'cheat.exe', 'torrent.exe', 'vpn.exe'];
+    if(virusFiles.includes(name)){
+        systemState.deleted.push('Boot');
+        localStorage.setItem(stateKey, JSON.stringify(systemState));
+        alert('Вирус заражен! Система повреждена.');
+    } else {
+        alert(`Скачано ${name}`);
+    }
     saveUserFiles();
     if(document.getElementById('explorer').classList.contains('open')) renderExplorer();
 }
@@ -636,6 +643,9 @@ function calculateOccupied(d){
     const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
     return 30 + 5 * users + sz(fs[d]);
 }
+function calculateFree(d){
+    return 50 - calculateOccupied(d);
+}
 function renderExplorer(){
     const c = document.getElementById('explorerContent'); c.innerHTML = '';
     const root = currentPath.length === 0;
@@ -647,7 +657,7 @@ function renderExplorer(){
             div.onclick = () => selectFile(n, div);
             div.ondblclick = () => { currentPath = [n]; updatePath(); renderExplorer(); };
             const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = 'DISK';
-            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (${calculateOccupied(n)} кб/50 кб)`;
+            const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (свободно ${calculateFree(n)} кб/50 кб)`;
             div.append(ic, lb); c.append(div);
         });
     } else {
