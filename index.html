@@ -749,7 +749,7 @@ function startPerfUpdate() {
     if (perfUpdateInterval) clearInterval(perfUpdateInterval);
     perfUpdateInterval = setInterval(() => {
         // Simulate CPU usage fluctuation
-        cpuUsage = Math.floor(10 + Math.random() * 90 * (global_cpu / 3)); // Added base 10% to ensure some load
+        cpuUsage = Math.floor(1 + Math.random() * 99); // Random from 1 to 100
         updatePerf();
     }, 2000);
 }
