@@ -489,6 +489,7 @@ function goTo(id) {
     if (id === 'delay1') setTimeout(() => goTo('nosignal'), 2000);
     if (id === 'nosignal') {
         if (previousScreen === 'delay1') setTimeout(() => goTo('start'), 3000);
+        if (previousScreen === 'no_time') setTimeout(() => goTo('main'), 15000);
     }
     if (id === 'start') {
         if(!checkSystemIntegrity()) return;
@@ -1301,13 +1302,13 @@ function enterOS(){
 function launchOS(){
     db.ref('users/' + currentUser.uid).once('value').then(s => {
         const userData = s.val() || {};
-        if (userData.cpu === 0 || userData.ram === 0) {
-            previousScreen = 'nosignal_no_time';
+        if (userData.time_os === 0 || userData.cpu === 0 || userData.ram === 0) {
+            previousScreen = 'no_time';
             goTo('nosignal');
             return;
         }
         if (userData.disk === 0) {
-            previousScreen = 'nosignal_no_time';
+            previousScreen = 'no_time';
             goTo('nosignal');
             setTimeout(() => {
                 document.getElementById('diskMessage').style.display = 'block';
