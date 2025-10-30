@@ -185,6 +185,8 @@
         <button onclick="addToCart('cpu2')">Купить HTML 2</button>
         <div>Процессор HTML 3 - 500 монет</div>
         <button onclick="addToCart('cpu3')">Купить HTML 3</button>
+        <div>Процессор HTML Ultra - 3000 монет</div>
+        <button onclick="addToCart('cpuUltra')">Купить HTML Ultra</button>
         <div>Оперативная память +10 KB - 100 монет</div>
         <button onclick="addToCart('ram10')">+10 KB RAM</button>
         <div>Оперативная память +50 KB - 500 монет</div>
@@ -311,7 +313,7 @@
                 <button onclick="closeApp('notepad')">×</button>
             </div>
         </div>
-        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize()"></textarea>
+        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize(); updateNotepadRam();"></textarea>
     </div>
     <!-- БРАУЗЕР -->
     <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
@@ -438,7 +440,7 @@ const auth = firebase.auth();
 const db = firebase.database();
 let currentUser = null;
 let timeInterval = null, wifiInterval = null;
-let cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
+let cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, cpuUltra:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
 let previousScreen = '';
 let connected = false, currentNetwork = '';
 let currentUserName = "Гость";
@@ -470,11 +472,21 @@ let global_cpu = 0;
 let global_ram = 0;
 let global_disk = 0;
 let used_ram = 0;
-const appRamCost = {'explorer': 10, 'calc': 5, 'notepad': 8, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // RAM cost per app in KB
+const appRamCost = {'explorer': 5, 'calc': 3, 'notepad': 3, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // Base RAM cost per app in KB
 const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
+const systemRam = 5; // System processes RAM
 let processUpdateInterval = null;
 let perfUpdateInterval = null;
 let cpuUsage = 0;
+let isPageLoaded = false; // For browser site loaded
+let notepadExtraRam = 0; // For notepad dynamic RAM
+
+const cpuSpeeds = {
+    1: {loadOS: 25000, openApp: 5000, closeApp: 15000},
+    2: {loadOS: 15000, openApp: 3000, closeApp: 10000},
+    3: {loadOS: 10000, openApp: 1000, closeApp: 5000},
+    4: {loadOS: 5000, openApp: 100, closeApp: 3000}
+};
 
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
@@ -489,8 +501,8 @@ function goTo(id) {
         if(!checkSystemIntegrity()) return;
         setTimeout(() => goTo('user'), 3000);
     }
-    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); }
-    if (id === 'shutdown') setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, 5000);
+    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); used_ram += systemRam; updateSpecs(); updatePerf(); }
+    if (id === 'shutdown') setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, cpuSpeeds[global_cpu]?.closeApp || 0);
 }
 function loadUserData(uid) {
     db.ref('users/' + uid + '/coins').on('value', s => document.getElementById('coins').textContent = s.val()||0);
@@ -620,35 +632,39 @@ function removeViruses() {
 }
 /* МЕССЕНДЖЕР */
 function openApp(id, params={}){
-    if (used_ram + (appRamCost[id] || 0) > global_ram) {
-        alert('Недостаточно ОЗУ! Закрытие приложения.');
-        return;
-    }
-    const win = document.getElementById(id);
-    win.classList.remove('minimized');
-    win.style.display = 'flex';
-    win.classList.add('open');
-    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
-    if(id === 'browser') goHome();
-    if(id === 'notepad' && params.content !== undefined) {
-        document.getElementById('notepadText').value = params.content || '';
-        document.getElementById('notepad').dataset.file = params.file;
-        document.getElementById('notepad').dataset.path = params.path;
-    }
-    if(id === 'messenger'){
-        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
-        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
-        if (msgUser) listenForMessages();
-    }
-    if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
-    updateTaskbar();
-    bringToFront(id);
-    if (appRamCost[id]) {
-        used_ram += appRamCost[id];
-        updateSpecs();
-        updatePerf();
-        checkRamOverflow();
-    }
+    const delay = cpuSpeeds[global_cpu]?.openApp || 0;
+    setTimeout(() => {
+        if (used_ram + (appRamCost[id] || 0) > global_ram) {
+            alert('Недостаточно ОЗУ! Закрытие приложения.');
+            return;
+        }
+        const win = document.getElementById(id);
+        win.classList.remove('minimized');
+        win.style.display = 'flex';
+        win.classList.add('open');
+        if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
+        if(id === 'browser') goHome();
+        if(id === 'notepad' && params.content !== undefined) {
+            document.getElementById('notepadText').value = params.content || '';
+            document.getElementById('notepad').dataset.file = params.file;
+            document.getElementById('notepad').dataset.path = params.path;
+            updateNotepadRam(); // Update RAM based on initial text
+        }
+        if(id === 'messenger'){
+            document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
+            document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
+            if (msgUser) listenForMessages();
+        }
+        if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
+        updateTaskbar();
+        bringToFront(id);
+        if (appRamCost[id]) {
+            used_ram += appRamCost[id];
+            updateSpecs();
+            updatePerf();
+            checkRamOverflow();
+        }
+    }, delay);
 }
 function checkRamOverflow() {
     if (used_ram >= global_ram) {
@@ -726,7 +742,7 @@ function startPerfUpdate() {
     if (perfUpdateInterval) clearInterval(perfUpdateInterval);
     perfUpdateInterval = setInterval(() => {
         // Simulate CPU usage fluctuation
-        cpuUsage = Math.floor(Math.random() * 100 * (global_cpu / 3));
+        cpuUsage = Math.floor(Math.random() * 100 * (global_cpu / 4));
         updatePerf();
     }, 2000);
 }
@@ -812,6 +828,12 @@ function goHome(){
         <p><span style="color:#00f;cursor:pointer;" onclick="loadPage('http://torrent.html')">torrent.html</span> — Торрент клиент</p>
         <p><span style="color:#00f;cursor:pointer;" onclick="loadPage('http://vpn.html')">vpn.html</span> — VPN сервис</p>
     `;
+    if (isPageLoaded) used_ram -= 5;
+    isPageLoaded = true;
+    used_ram += 5;
+    updateSpecs();
+    updatePerf();
+    checkRamOverflow();
 }
 function loadPage(url = document.getElementById('browserAddress').value.trim()){
     const cont = document.getElementById('browserContent');
@@ -819,16 +841,16 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     if(url === '' || url === 'home') { goHome(); return; }
     let page = '', file = '', size = 0, isVirus = false;
     switch(url){
-        case 'http://news.html': page = 'Новости'; cont.innerHTML = `<h1>${page}</h1><p>Последние новости из мира...</p>`; return;
-        case 'http://weather.html': page = 'Погода'; cont.innerHTML = `<h1>${page}</h1><p>Сегодня солнечно...</p>`; return;
-        case 'http://forum.html': page = 'Форум'; cont.innerHTML = `<h1>${page}</h1><p>Обсуждения тем...</p>`; return;
-        case 'http://wiki.html': page = 'Энциклопедия'; cont.innerHTML = `<h1>${page}</h1><p>Знания о всём...</p>`; return;
-        case 'http://blog.html': page = 'Блог'; cont.innerHTML = `<h1>${page}</h1><p>Личные записи...</p>`; return;
-        case 'http://recipe.html': page = 'Рецепты'; cont.innerHTML = `<h1>${page}</h1><p>Вкусные блюда...</p>`; return;
-        case 'http://joke.html': page = 'Анекдоты'; cont.innerHTML = `<h1>${page}</h1><p>Смешные истории...</p>`; return;
-        case 'http://quote.html': page = 'Цитаты'; cont.innerHTML = `<h1>${page}</h1><p>Мудрые слова...</p>`; return;
-        case 'http://fact.html': page = 'Факты'; cont.innerHTML = `<h1>${page}</h1><p>Интересные факты...</p>`; return;
-        case 'http://puzzle.html': page = 'Загадки'; cont.innerHTML = `<h1>${page}</h1><p>Головоломки...</p>`; return;
+        case 'http://news.html': page = 'Новости'; cont.innerHTML = `<h1>${page}</h1><p>Последние новости из мира...</p>`; break;
+        case 'http://weather.html': page = 'Погода'; cont.innerHTML = `<h1>${page}</h1><p>Сегодня солнечно...</p>`; break;
+        case 'http://forum.html': page = 'Форум'; cont.innerHTML = `<h1>${page}</h1><p>Обсуждения тем...</p>`; break;
+        case 'http://wiki.html': page = 'Энциклопедия'; cont.innerHTML = `<h1>${page}</h1><p>Знания о всём...</p>`; break;
+        case 'http://blog.html': page = 'Блог'; cont.innerHTML = `<h1>${page}</h1><p>Личные записи...</p>`; break;
+        case 'http://recipe.html': page = 'Рецепты'; cont.innerHTML = `<h1>${page}</h1><p>Вкусные блюда...</p>`; break;
+        case 'http://joke.html': page = 'Анекдоты'; cont.innerHTML = `<h1>${page}</h1><p>Смешные истории...</p>`; break;
+        case 'http://quote.html': page = 'Цитаты'; cont.innerHTML = `<h1>${page}</h1><p>Мудрые слова...</p>`; break;
+        case 'http://fact.html': page = 'Факты'; cont.innerHTML = `<h1>${page}</h1><p>Интересные факты...</p>`; break;
+        case 'http://puzzle.html': page = 'Загадки'; cont.innerHTML = `<h1>${page}</h1><p>Головоломки...</p>`; break;
         case 'http://notepad.html': page = 'Текстовый редактор'; file = 'texteditor.exe'; size = 3; break;
         case 'http://calculator.html': page = 'Продвинутый калькулятор'; file = 'advcalc.exe'; size = 4; break;
         case 'http://imageeditor.html': page = 'Редактор изображений'; file = 'photoedit.exe'; size = 10; break;
@@ -856,6 +878,12 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     } else {
         cont.innerHTML = `<h1>Welcome to ${page}</h1><p>Содержимое сайта...</p>`;
     }
+    if (isPageLoaded) used_ram -= 5;
+    isPageLoaded = true;
+    used_ram += 5;
+    updateSpecs();
+    updatePerf();
+    checkRamOverflow();
 }
 function startDownload(name, size){
     const panel = document.getElementById('browserDownloads'); panel.style.display = 'block';
@@ -886,23 +914,30 @@ function completeDownload(name, size){
 }
 /* ОКНА */
 function closeApp(id){
-    const win = document.getElementById(id);
-    win.classList.remove('open');
-    win.classList.remove('maximized');
-    win.classList.remove('minimized');
-    win.style.display = 'none';
-    if (id === 'notepad') saveNotepadContent();
-    if (id === 'taskmanager') {
-        clearInterval(processUpdateInterval);
-        clearInterval(perfUpdateInterval);
-    }
-    updateTaskbar();
-    if (appRamCost[id]) {
-        used_ram -= appRamCost[id];
-        if (used_ram < 0) used_ram = 0;
-        updateSpecs();
-        updatePerf();
-    }
+    const delay = cpuSpeeds[global_cpu]?.closeApp || 0;
+    setTimeout(() => {
+        const win = document.getElementById(id);
+        win.classList.remove('open');
+        win.classList.remove('maximized');
+        win.classList.remove('minimized');
+        win.style.display = 'none';
+        if (id === 'notepad') saveNotepadContent();
+        if (id === 'taskmanager') {
+            clearInterval(processUpdateInterval);
+            clearInterval(perfUpdateInterval);
+        }
+        updateTaskbar();
+        if (appRamCost[id]) {
+            used_ram -= appRamCost[id];
+            if (id === 'notepad') used_ram -= notepadExtraRam;
+            notepadExtraRam = 0;
+            if (id === 'browser' && isPageLoaded) used_ram -= 5;
+            isPageLoaded = false;
+            if (used_ram < 0) used_ram = 0;
+            updateSpecs();
+            updatePerf();
+        }
+    }, delay);
 }
 function minimizeApp(id){
     const win = document.getElementById(id);
@@ -940,6 +975,10 @@ function createAppWindow(id, title, innerHTML){
     win.appendChild(contentDiv);
     document.getElementById('desktop').appendChild(win);
     openApp(id);
+    used_ram += 10; // Internet programs 10 KB
+    updateSpecs();
+    updatePerf();
+    checkRamOverflow();
 }
 function openMockApp(name){
     const id = 'app_' + name.replace(/\./g, '_');
@@ -1096,6 +1135,15 @@ function updateFileSize() {
         cur[file].size = size;
     }
 }
+function updateNotepadRam() {
+    const text = document.getElementById('notepadText').value;
+    const newExtra = Math.floor(text.length / 30);
+    used_ram += (newExtra - notepadExtraRam);
+    notepadExtraRam = newExtra;
+    updateSpecs();
+    updatePerf();
+    checkRamOverflow();
+}
 function saveNotepadContent() {
     updateFileSize();
     saveUserFiles();
@@ -1247,9 +1295,9 @@ function updateCart(){
     let total = 0;
     for(let k in cart){
         if(cart[k]>0){
-            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast', cpu1:'HTML 1', cpu2:'HTML 2', cpu3:'HTML 3', ram10:'+10 KB RAM', ram50:'+50 KB RAM', ram500:'+500 KB RAM', disk50:'+50 KB Disk', disk100:'+100 KB Disk', disk500:'+500 KB Disk'}[k];
+            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast', cpu1:'HTML 1', cpu2:'HTML 2', cpu3:'HTML 3', cpuUltra:'HTML Ultra', ram10:'+10 KB RAM', ram50:'+50 KB RAM', ram500:'+500 KB RAM', disk50:'+50 KB Disk', disk100:'+100 KB Disk', disk500:'+500 KB Disk'}[k];
             c.innerHTML += `${name}: ${cart[k]} <button onclick="removeFromCart('${k}')">-</button><br>`;
-            total += cart[k] * {os:10,bomj:20,medium:30,ultra:50, cpu1:100, cpu2:300, cpu3:500, ram10:100, ram50:500, ram500:1000, disk50:100, disk100:200, disk500:2000}[k];
+            total += cart[k] * {os:10,bomj:20,medium:30,ultra:50, cpu1:100, cpu2:300, cpu3:500, cpuUltra:3000, ram10:100, ram50:500, ram500:1000, disk50:100, disk100:200, disk500:2000}[k];
         }
     }
     if(total > 0) c.innerHTML += `<br>Общая сумма: ${total} монет`;
@@ -1257,7 +1305,7 @@ function updateCart(){
 function checkout(){
     if(!currentUser) return;
     const uid = currentUser.uid;
-    const cost = cart.os*10 + cart.bomj*20 + cart.medium*30 + cart.ultra*50 + cart.cpu1*100 + cart.cpu2*300 + cart.cpu3*500 + cart.ram10*100 + cart.ram50*500 + cart.ram500*1000 + cart.disk50*100 + cart.disk100*200 + cart.disk500*2000;
+    const cost = cart.os*10 + cart.bomj*20 + cart.medium*30 + cart.ultra*50 + cart.cpu1*100 + cart.cpu2*300 + cart.cpu3*500 + cart.cpuUltra*3000 + cart.ram10*100 + cart.ram50*500 + cart.ram500*1000 + cart.disk50*100 + cart.disk100*200 + cart.disk500*2000;
     db.ref('users/' + uid + '/coins').once('value').then(snap => {
         const coins = snap.val() || 0;
         if(coins < cost){alert('Недостаточно монет');return;}
@@ -1266,12 +1314,13 @@ function checkout(){
         db.ref('users/' + uid + '/time_bomj').transaction(t => (t||0) + cart.bomj);
         db.ref('users/' + uid + '/time_medium').transaction(t => (t||0) + cart.medium);
         db.ref('users/' + uid + '/time_ultra').transaction(t => (t||0) + cart.ultra);
-        if (cart.cpu3 > 0) db.ref('users/' + uid + '/cpu').set(3);
+        if (cart.cpuUltra > 0) db.ref('users/' + uid + '/cpu').set(4);
+        else if (cart.cpu3 > 0) db.ref('users/' + uid + '/cpu').set(3);
         else if (cart.cpu2 > 0) db.ref('users/' + uid + '/cpu').set(2);
         else if (cart.cpu1 > 0) db.ref('users/' + uid + '/cpu').set(1);
         db.ref('users/' + uid + '/ram').transaction(r => (r||0) + cart.ram10*10 + cart.ram50*50 + cart.ram500*500);
         db.ref('users/' + uid + '/disk').transaction(d => (d||0) + cart.disk50*50 + cart.disk100*100 + cart.disk500*500);
-        cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
+        cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, cpuUltra:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
         updateCart();
         alert('Покупка завершена');
     });
@@ -1298,7 +1347,8 @@ function launchOS(){
             return;
         }
         previousScreen = 'delay1';
-        goTo('delay1');
+        const loadDelay = cpuSpeeds[global_cpu]?.loadOS || 0;
+        setTimeout(() => goTo('delay1'), loadDelay);
     });
 }
 /* ЧАСЫ */
