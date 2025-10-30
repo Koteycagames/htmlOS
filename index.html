@@ -749,7 +749,7 @@ function startPerfUpdate() {
     if (perfUpdateInterval) clearInterval(perfUpdateInterval);
     perfUpdateInterval = setInterval(() => {
         // Simulate CPU usage fluctuation
-        cpuUsage = Math.floor(1 + Math.random() * 99); // Random from 1 to 100
+        cpuUsage = Math.floor(1 + Math.random() * 100); // Random from 1 to 100
         updatePerf();
     }, 2000);
 }
@@ -925,6 +925,9 @@ function closeApp(id){
         if (used_ram < 5 * systemProcesses.length) used_ram = 5 * systemProcesses.length; // Minimum base RAM
         updateSpecs();
         updatePerf();
+    }
+    if (id === 'notepad') {
+        used_ram -= 8; // Specific for notepad to ensure
     }
     updateTaskbar();
 }
