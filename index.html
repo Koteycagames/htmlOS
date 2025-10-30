@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -311,7 +312,7 @@
                 <button onclick="closeApp('notepad')">×</button>
             </div>
         </div>
-        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize(); updateNotepadRam();"></textarea>
+        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize()"></textarea>
     </div>
     <!-- БРАУЗЕР -->
     <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
@@ -374,9 +375,22 @@
                 <div id="processesList"></div>
             </div>
             <div id="performanceTab" style="display:none;">
-                <p>Процессор: HTML <span id="cpuPerf">0</span> ()</p>
-                <p>Оперативная память: <span id="ramPerf">0</span> ()</p>
-                <p>Диск: <span id="diskPerf">0</span> KB ()</p>
+                <div class="perf-section">
+                    <h3>Процессор</h3>
+                    <p>Уровень: HTML <span id="cpuPerf">0</span></p>
+                    <div class="perf-bar"><div id="cpuFill" class="perf-fill" style="width: 0%;"></div></div>
+                    <p>Использование: <span id="cpuUsage">0</span>%</p>
+                </div>
+                <div class="perf-section">
+                    <h3>Оперативная память</h3>
+                    <p>Всего: <span id="ramPerf">0</span> KB | Использовано: <span id="usedRamPerf">0</span> KB</p>
+                    <div class="perf-bar"><div id="ramFill" class="perf-fill" style="width: 0%;"></div></div>
+                </div>
+                <div class="perf-section">
+                    <h3>Диск</h3>
+                    <p>Всего: <span id="diskPerf">0</span> KB | Занято: <span id="diskUsed">0</span> KB | Свободно: <span id="diskFree">0</span> KB</p>
+                    <div class="perf-bar"><div id="diskFill" class="perf-fill" style="width: 0%;"></div></div>
+                </div>
             </div>
         </div>
     </div>
@@ -403,6 +417,8 @@
     <div class="context-item" onclick="openApp('explorer')">Открыть Проводник</div>
     <div class="context-item" onclick="openApp('taskmanager')">Открыть Диспетчер задач</div>
 </div>
+<!-- FREEZE OVERLAY -->
+<div id="freezeOverlay" class="screen"></div>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -455,14 +471,12 @@ let global_cpu = 0;
 let global_ram = 0;
 let global_disk = 0;
 let used_ram = 0;
-const appRamCost = {'explorer': 5, 'calc': 3, 'notepad': 3, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // RAM cost per app in KB
+const appRamCost = {'explorer': 10, 'calc': 5, 'notepad': 8, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // RAM cost per app in KB
 const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
 let processUpdateInterval = null;
 let perfUpdateInterval = null;
 let cpuUsage = 0;
-let notepadExtraRam = 0;
-let browserExtraRam = 0; // For open site
-let systemRam = 5; // System processes total RAM
+
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -476,7 +490,7 @@ function goTo(id) {
         if(!checkSystemIntegrity()) return;
         setTimeout(() => goTo('user'), 3000);
     }
-    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); used_ram += systemRam; updateSpecs(); updatePerf(); }
+    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); }
     if (id === 'shutdown') setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, 5000);
 }
 function loadUserData(uid) {
@@ -621,7 +635,6 @@ function openApp(id, params={}){
         document.getElementById('notepadText').value = params.content || '';
         document.getElementById('notepad').dataset.file = params.file;
         document.getElementById('notepad').dataset.path = params.path;
-        updateNotepadRam(); // Calculate initial extra RAM
     }
     if(id === 'messenger'){
         document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
@@ -800,13 +813,6 @@ function goHome(){
         <p><span style="color:#00f;cursor:pointer;" onclick="loadPage('http://torrent.html')">torrent.html</span> — Торрент клиент</p>
         <p><span style="color:#00f;cursor:pointer;" onclick="loadPage('http://vpn.html')">vpn.html</span> — VPN сервис</p>
     `;
-    if (browserExtraRam > 0) {
-        used_ram -= browserExtraRam;
-        browserExtraRam = 0;
-    }
-    updateSpecs();
-    updatePerf();
-    checkRamOverflow();
 }
 function loadPage(url = document.getElementById('browserAddress').value.trim()){
     const cont = document.getElementById('browserContent');
@@ -851,11 +857,6 @@ function loadPage(url = document.getElementById('browserAddress').value.trim()){
     } else {
         cont.innerHTML = `<h1>Welcome to ${page}</h1><p>Содержимое сайта...</p>`;
     }
-    browserExtraRam = 5;
-    used_ram += browserExtraRam;
-    updateSpecs();
-    updatePerf();
-    checkRamOverflow();
 }
 function startDownload(name, size){
     const panel = document.getElementById('browserDownloads'); panel.style.display = 'block';
@@ -899,10 +900,6 @@ function closeApp(id){
     updateTaskbar();
     if (appRamCost[id]) {
         used_ram -= appRamCost[id];
-        if (id === 'notepad') used_ram -= notepadExtraRam;
-        notepadExtraRam = 0;
-        if (id === 'browser') used_ram -= browserExtraRam;
-        browserExtraRam = 0;
         if (used_ram < 0) used_ram = 0;
         updateSpecs();
         updatePerf();
@@ -944,10 +941,6 @@ function createAppWindow(id, title, innerHTML){
     win.appendChild(contentDiv);
     document.getElementById('desktop').appendChild(win);
     openApp(id);
-    used_ram += 10; // Programs from internet consume 10 KB
-    updateSpecs();
-    updatePerf();
-    checkRamOverflow();
 }
 function openMockApp(name){
     const id = 'app_' + name.replace(/\./g, '_');
@@ -988,7 +981,7 @@ function calculateOccupied(d){
         return o.type === 'file' ? o.size || 0 : 0;
     }
     const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
-    return 30 + 5 * users + sz(fs[d]);
+    return 30 + 5 * users + sz(fs[d]['Users'][currentUserName] || {});
 }
 function calculateFree(d){
     return global_disk - calculateOccupied(d);
@@ -1103,16 +1096,6 @@ function updateFileSize() {
         cur[file].content = text;
         cur[file].size = size;
     }
-    updateNotepadRam(); // Update RAM when text changes
-}
-function updateNotepadRam() {
-    const text = document.getElementById('notepadText').value;
-    const extra = Math.floor(text.length / 30);
-    used_ram = used_ram - notepadExtraRam + extra;
-    notepadExtraRam = extra;
-    updateSpecs();
-    updatePerf();
-    checkRamOverflow();
 }
 function saveNotepadContent() {
     updateFileSize();
@@ -1326,3 +1309,4 @@ goTo('login');
 </script>
 </body>
 </html>
+```
