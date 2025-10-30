@@ -125,6 +125,11 @@
         .process-item { display: flex; justify-content: space-between; margin-bottom: 8px; }
         .process-item button { padding: 4px 8px; background: #f00; color: #fff; border: none; cursor: pointer; }
         .process-item button:hover { background: #c00; }
+        #performanceTab { flex-direction: column; gap: 20px; }
+        .perf-section { display: flex; flex-direction: column; gap: 10px; border: 1px solid #0f0; padding: 10px; border-radius: 6px; }
+        .perf-bar { height: 20px; background: #222; border-radius: 4px; overflow: hidden; }
+        .perf-fill { height: 100%; background: #0f0; transition: width 0.5s; }
+        #freezeOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: none; }
     </style>
 </head>
 <body>
@@ -369,9 +374,22 @@
                 <div id="processesList"></div>
             </div>
             <div id="performanceTab" style="display:none;">
-                <p>Процессор: HTML <span id="cpuPerf">0</span> ()</p>
-                <p>Оперативная память: <span id="ramPerf">0</span> () Использовано: <span id="usedRamPerf">0</span> KB</p>
-                <p>Диск: <span id="diskPerf">0</span> KB ()</p>
+                <div class="perf-section">
+                    <h3>Процессор</h3>
+                    <p>Уровень: HTML <span id="cpuPerf">0</span></p>
+                    <div class="perf-bar"><div id="cpuFill" class="perf-fill" style="width: 0%;"></div></div>
+                    <p>Использование: <span id="cpuUsage">0</span>%</p>
+                </div>
+                <div class="perf-section">
+                    <h3>Оперативная память</h3>
+                    <p>Всего: <span id="ramPerf">0</span> KB | Использовано: <span id="usedRamPerf">0</span> KB</p>
+                    <div class="perf-bar"><div id="ramFill" class="perf-fill" style="width: 0%;"></div></div>
+                </div>
+                <div class="perf-section">
+                    <h3>Диск</h3>
+                    <p>Всего: <span id="diskPerf">0</span> KB | Занято: <span id="diskUsed">0</span> KB | Свободно: <span id="diskFree">0</span> KB</p>
+                    <div class="perf-bar"><div id="diskFill" class="perf-fill" style="width: 0%;"></div></div>
+                </div>
             </div>
         </div>
     </div>
@@ -398,6 +416,8 @@
     <div class="context-item" onclick="openApp('explorer')">Открыть Проводник</div>
     <div class="context-item" onclick="openApp('taskmanager')">Открыть Диспетчер задач</div>
 </div>
+<!-- FREEZE OVERLAY -->
+<div id="freezeOverlay" class="screen"></div>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -452,6 +472,9 @@ let global_disk = 0;
 let used_ram = 0;
 const appRamCost = {'explorer': 10, 'calc': 5, 'notepad': 8, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // RAM cost per app in KB
 const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
+let processUpdateInterval = null;
+let perfUpdateInterval = null;
+let cpuUsage = 0;
 
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
@@ -597,6 +620,10 @@ function removeViruses() {
 }
 /* МЕССЕНДЖЕР */
 function openApp(id, params={}){
+    if (used_ram + (appRamCost[id] || 0) > global_ram) {
+        alert('Недостаточно ОЗУ! Закрытие приложения.');
+        return;
+    }
     const win = document.getElementById(id);
     win.classList.remove('minimized');
     win.style.display = 'flex';
@@ -613,18 +640,29 @@ function openApp(id, params={}){
         document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
         if (msgUser) listenForMessages();
     }
-    if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); }
+    if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
     updateTaskbar();
     bringToFront(id);
     if (appRamCost[id]) {
         used_ram += appRamCost[id];
-        if (used_ram > global_ram) {
-            alert('Недостаточно ОЗУ! Закрытие приложения.');
-            closeApp(id);
-        } else {
-            updateSpecs();
-            updatePerf();
-        }
+        updateSpecs();
+        updatePerf();
+        checkRamOverflow();
+    }
+}
+function checkRamOverflow() {
+    if (used_ram >= global_ram) {
+        // OS freezes
+        document.body.style.pointerEvents = 'none'; // Disable interactions
+        setTimeout(() => {
+            document.getElementById('freezeOverlay').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('freezeOverlay').style.display = 'none';
+                document.body.style.pointerEvents = 'auto';
+                goTo('nosignal');
+                setTimeout(() => location.reload(), 3000); // Restart system
+            }, 15000);
+        }, 0);
     }
 }
 function showTab(tab) {
@@ -653,6 +691,10 @@ function updateProcesses() {
         list.appendChild(item);
     });
 }
+function startProcessUpdate() {
+    if (processUpdateInterval) clearInterval(processUpdateInterval);
+    processUpdateInterval = setInterval(updateProcesses, 2000);
+}
 function endProcess(id, isSystem) {
     if (isSystem) {
         if (confirm('Завершение системного процесса может привести к неполадкам. Продолжить?')) {
@@ -668,9 +710,25 @@ function endProcess(id, isSystem) {
 }
 function updatePerf() {
     document.getElementById('cpuPerf').textContent = global_cpu;
+    document.getElementById('cpuUsage').textContent = cpuUsage;
+    document.getElementById('cpuFill').style.width = `${cpuUsage}%`;
     document.getElementById('ramPerf').textContent = global_ram;
     document.getElementById('usedRamPerf').textContent = used_ram;
+    document.getElementById('ramFill').style.width = `${(used_ram / global_ram * 100) || 0}%`;
+    const occupied = calculateOccupied('C:');
+    const free = calculateFree('C:');
     document.getElementById('diskPerf').textContent = global_disk;
+    document.getElementById('diskUsed').textContent = occupied;
+    document.getElementById('diskFree').textContent = free;
+    document.getElementById('diskFill').style.width = `${(occupied / global_disk * 100) || 0}%`;
+}
+function startPerfUpdate() {
+    if (perfUpdateInterval) clearInterval(perfUpdateInterval);
+    perfUpdateInterval = setInterval(() => {
+        // Simulate CPU usage fluctuation
+        cpuUsage = Math.floor(Math.random() * 100 * (global_cpu / 3));
+        updatePerf();
+    }, 2000);
 }
 function msgRegister() {
     const username = document.getElementById('msgUsername').value;
@@ -810,6 +868,10 @@ function startDownload(name, size){
 }
 function completeDownload(name, size){
     updateUserFolder(currentUserName);
+    if (calculateOccupied('C:') + size > global_disk) {
+        alert('Недостаточно места на диске!');
+        return;
+    }
     const down = fs['C:']['Users'][currentUserName]['Загрузки'];
     down[name] = {type:'file', size:size};
     if(virusFiles.includes(name)){
@@ -830,6 +892,10 @@ function closeApp(id){
     win.classList.remove('minimized');
     win.style.display = 'none';
     if (id === 'notepad') saveNotepadContent();
+    if (id === 'taskmanager') {
+        clearInterval(processUpdateInterval);
+        clearInterval(perfUpdateInterval);
+    }
     updateTaskbar();
     if (appRamCost[id]) {
         used_ram -= appRamCost[id];
@@ -914,7 +980,7 @@ function calculateOccupied(d){
         return o.type === 'file' ? o.size || 0 : 0;
     }
     const users = Object.keys(fs['C:']['Users']).filter(k => !['type','system'].includes(k)).length;
-    return 30 + 5 * users + sz(fs[d]);
+    return 30 + 5 * users + sz(fs[d]['Users'][currentUserName] || {});
 }
 function calculateFree(d){
     return global_disk - calculateOccupied(d);
