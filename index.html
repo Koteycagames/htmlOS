@@ -926,9 +926,6 @@ function closeApp(id){
         updateSpecs();
         updatePerf();
     }
-    if (id === 'notepad') {
-        used_ram -= 8; // Specific for notepad to ensure
-    }
     updateTaskbar();
 }
 function minimizeApp(id){
