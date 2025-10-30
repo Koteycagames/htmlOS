@@ -53,7 +53,7 @@
         #startMenu.open { transform: scale(1); opacity: 1; pointer-events: auto; }
         #timeLeft { font-size: 14px; color: #0f0; margin-left: 10px; }
         #wifiTime { font-size: 14px; color: #0f0; margin-left: 10px; }
-        .tile { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; margin: 8px; transition: 0.2s; }
+        .tile { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; margin: 8px; transition: 0.2s; text-align: center; }
         .tile:hover { background: #0f0; color: #000; transform: translateY(-4px); }
         .app-window { position: fixed; background: #1e1e1e; border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 200; resize: both; overflow: hidden; min-width: 300px; min-height: 200px; }
         .app-window.open { display: flex; }
@@ -185,18 +185,18 @@
         <button onclick="addToCart('cpu2')">Купить HTML 2</button>
         <div>Процессор HTML 3 - 500 монет</div>
         <button onclick="addToCart('cpu3')">Купить HTML 3</button>
-        <div>Оперативная память +10 KB - 100 монет</div>
-        <button onclick="addToCart('ram10')">+10 KB RAM</button>
-        <div>Оперативная память +50 KB - 500 монет</div>
-        <button onclick="addToCart('ram50')">+50 KB RAM</button>
-        <div>Оперативная память +500 KB - 1000 монет</div>
-        <button onclick="addToCart('ram500')">+500 KB RAM</button>
-        <div>Диск +50 KB - 100 монет</div>
-        <button onclick="addToCart('disk50')">+50 KB Disk</button>
-        <div>Диск +100 KB - 200 монет</div>
-        <button onclick="addToCart('disk100')">+100 KB Disk</button>
-        <div>Диск +500 KB - 2000 монет</div>
-        <button onclick="addToCart('disk500')">+500 KB Disk</button>
+        <div>Оперативная память 10 KB - 100 монет</div>
+        <button onclick="addToCart('ram10')">10 KB RAM</button>
+        <div>Оперативная память 50 KB - 500 монет</div>
+        <button onclick="addToCart('ram50')">50 KB RAM</button>
+        <div>Оперативная память 500 KB - 1000 монет</div>
+        <button onclick="addToCart('ram500')">500 KB RAM</button>
+        <div>Диск 50 KB - 100 монет</div>
+        <button onclick="addToCart('disk50')">50 KB Disk</button>
+        <div>Диск 100 KB - 200 монет</div>
+        <button onclick="addToCart('disk100')">100 KB Disk</button>
+        <div>Диск 500 KB - 2000 монет</div>
+        <button onclick="addToCart('disk500')">500 KB Disk</button>
     </div>
     <h3>Корзина:</h3>
     <div id="cart"></div>
@@ -475,7 +475,6 @@ const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
 let processUpdateInterval = null;
 let perfUpdateInterval = null;
 let cpuUsage = 0;
-
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -868,8 +867,9 @@ function startDownload(name, size){
 }
 function completeDownload(name, size){
     updateUserFolder(currentUserName);
-    if (calculateOccupied('C:') + size > global_disk) {
-        alert('Недостаточно места на диске!');
+    const free = calculateFree('C:');
+    if (free < size) {
+        alert(`Недостаточно места на диске! Требуется ${size} KB, доступно ${free} KB.`);
         return;
     }
     const down = fs['C:']['Users'][currentUserName]['Загрузки'];
@@ -995,7 +995,7 @@ function renderExplorer(){
             const div = document.createElement('div'); div.className = 'file-item';
             div.onclick = () => selectFile(n, div);
             div.ondblclick = () => { currentPath = [n]; updatePath(); renderExplorer(); };
-            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = 'DISK';
+            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.innerHTML = '💾';
             const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (свободно ${calculateFree(n)} кб/${global_disk} кб)`;
             div.append(ic, lb); c.append(div);
         });
@@ -1035,7 +1035,7 @@ function renderExplorer(){
                     alert('Неизвестный тип файла: ' + n);
                 }
             };
-            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = it.type === 'folder' ? 'FOLDER' : 'FILE';
+            const ic = document.createElement('div'); ic.className = 'file-icon'; ic.innerHTML = it.type === 'folder' ? '📁' : '📄';
             const lb = document.createElement('div'); lb.className = 'file-name'; lb.textContent = `${n} (${it.size||0} KB)`;
             div.append(ic, lb); c.append(div);
         }
@@ -1247,7 +1247,7 @@ function updateCart(){
     let total = 0;
     for(let k in cart){
         if(cart[k]>0){
-            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast', cpu1:'HTML 1', cpu2:'HTML 2', cpu3:'HTML 3', ram10:'+10 KB RAM', ram50:'+50 KB RAM', ram500:'+500 KB RAM', disk50:'+50 KB Disk', disk100:'+100 KB Disk', disk500:'+500 KB Disk'}[k];
+            const name = {os:'ОС',bomj:'Бомж Wi-Fi',medium:'Средний Wi-Fi',ultra:'Ultra fast', cpu1:'HTML 1', cpu2:'HTML 2', cpu3:'HTML 3', ram10:'10 KB RAM', ram50:'50 KB RAM', ram500:'500 KB RAM', disk50:'50 KB Disk', disk100:'100 KB Disk', disk500:'500 KB Disk'}[k];
             c.innerHTML += `${name}: ${cart[k]} <button onclick="removeFromCart('${k}')">-</button><br>`;
             total += cart[k] * {os:10,bomj:20,medium:30,ultra:50, cpu1:100, cpu2:300, cpu3:500, ram10:100, ram50:500, ram500:1000, disk50:100, disk100:200, disk500:2000}[k];
         }
@@ -1269,8 +1269,12 @@ function checkout(){
         if (cart.cpu3 > 0) db.ref('users/' + uid + '/cpu').set(3);
         else if (cart.cpu2 > 0) db.ref('users/' + uid + '/cpu').set(2);
         else if (cart.cpu1 > 0) db.ref('users/' + uid + '/cpu').set(1);
-        db.ref('users/' + uid + '/ram').transaction(r => (r||0) + cart.ram10*10 + cart.ram50*50 + cart.ram500*500);
-        db.ref('users/' + uid + '/disk').transaction(d => (d||0) + cart.disk50*50 + cart.disk100*100 + cart.disk500*500);
+        if (cart.ram500 > 0) db.ref('users/' + uid + '/ram').set(500);
+        else if (cart.ram50 > 0) db.ref('users/' + uid + '/ram').set(50);
+        else if (cart.ram10 > 0) db.ref('users/' + uid + '/ram').set(10);
+        if (cart.disk500 > 0) db.ref('users/' + uid + '/disk').set(500);
+        else if (cart.disk100 > 0) db.ref('users/' + uid + '/disk').set(100);
+        else if (cart.disk50 > 0) db.ref('users/' + uid + '/disk').set(50);
         cart = {os:0,bomj:0,medium:0,ultra:0, cpu1:0, cpu2:0, cpu3:0, ram10:0, ram50:0, ram500:0, disk50:0, disk100:0, disk500:0};
         updateCart();
         alert('Покупка завершена');
@@ -1305,6 +1309,9 @@ function launchOS(){
 setInterval(() => { const n = new Date(); document.getElementById('clock').textContent = n.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'}); }, 1000);
 /* ИНИЦИАЛИЗАЦИЯ */
 goTo('login');
+function renderDesktop(){
+    // Функция не была определена в исходном коде, но вызывалась. Если нужно, добавьте логику для рендеринга десктопа здесь.
+}
 </script>
 </body>
 </html>
