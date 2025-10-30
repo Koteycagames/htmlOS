@@ -496,7 +496,16 @@ function goTo(id) {
         const osDelay = delays[global_cpu || 0].osLoad;
         setTimeout(() => goTo('user'), osDelay);
     }
-    if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); }
+    if (id === 'desktop') { 
+        checkSystemIntegrity(); 
+        used_ram = 5 * systemProcesses.length; // Base RAM for system processes
+        updateSpecs();
+        updatePerf();
+        updateTaskbar(); 
+        startOSTimer(); 
+        autoConnectWifi(); 
+        renderDesktop(); 
+    }
     if (id === 'shutdown') {
         const shutdownDelay = delays[global_cpu || 0].shutdown;
         setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, shutdownDelay);
@@ -684,6 +693,7 @@ function showTab(tab) {
     document.getElementById('processesTab').style.display = tab === 'processes' ? 'flex' : 'none';
     document.getElementById('performanceTab').style.display = tab === 'performance' ? 'flex' : 'none';
     if (tab === 'processes') updateProcesses();
+    if (tab === 'performance') updatePerf();
 }
 function updateProcesses() {
     const list = document.getElementById('processesList');
@@ -739,7 +749,7 @@ function startPerfUpdate() {
     if (perfUpdateInterval) clearInterval(perfUpdateInterval);
     perfUpdateInterval = setInterval(() => {
         // Simulate CPU usage fluctuation
-        cpuUsage = Math.floor(Math.random() * 100 * (global_cpu / 3));
+        cpuUsage = Math.floor(10 + Math.random() * 90 * (global_cpu / 3)); // Added base 10% to ensure some load
         updatePerf();
     }, 2000);
 }
@@ -910,13 +920,13 @@ function closeApp(id){
         clearInterval(processUpdateInterval);
         clearInterval(perfUpdateInterval);
     }
-    updateTaskbar();
     if (appRamCost[id]) {
         used_ram -= appRamCost[id];
-        if (used_ram < 0) used_ram = 0;
+        if (used_ram < 5 * systemProcesses.length) used_ram = 5 * systemProcesses.length; // Minimum base RAM
         updateSpecs();
         updatePerf();
     }
+    updateTaskbar();
 }
 function minimizeApp(id){
     const win = document.getElementById(id);
