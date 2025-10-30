@@ -475,6 +475,12 @@ const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
 let processUpdateInterval = null;
 let perfUpdateInterval = null;
 let cpuUsage = 0;
+const delays = {
+    0: { osLoad: 3000, appOpen: 0, shutdown: 5000 }, // Default for CPU 0
+    1: { osLoad: 25000, appOpen: 5000, shutdown: 20000 },
+    2: { osLoad: 15000, appOpen: 3000, shutdown: 10000 },
+    3: { osLoad: 10000, appOpen: 1000, shutdown: 5000 }
+};
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -486,10 +492,14 @@ function goTo(id) {
     }
     if (id === 'start') {
         if(!checkSystemIntegrity()) return;
-        setTimeout(() => goTo('user'), 3000);
+        const osDelay = delays[global_cpu || 0].osLoad;
+        setTimeout(() => goTo('user'), osDelay);
     }
     if (id === 'desktop') { checkSystemIntegrity(); updateTaskbar(); startOSTimer(); autoConnectWifi(); renderDesktop(); }
-    if (id === 'shutdown') setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, 5000);
+    if (id === 'shutdown') {
+        const shutdownDelay = delays[global_cpu || 0].shutdown;
+        setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, shutdownDelay);
+    }
 }
 function loadUserData(uid) {
     db.ref('users/' + uid + '/coins').on('value', s => document.getElementById('coins').textContent = s.val()||0);
@@ -625,29 +635,32 @@ function openApp(id, params={}){
     }
     const win = document.getElementById(id);
     win.classList.remove('minimized');
-    win.style.display = 'flex';
     win.classList.add('open');
-    if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
-    if(id === 'browser') goHome();
-    if(id === 'notepad' && params.content !== undefined) {
-        document.getElementById('notepadText').value = params.content || '';
-        document.getElementById('notepad').dataset.file = params.file;
-        document.getElementById('notepad').dataset.path = params.path;
-    }
-    if(id === 'messenger'){
-        document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
-        document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
-        if (msgUser) listenForMessages();
-    }
-    if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
-    updateTaskbar();
-    bringToFront(id);
-    if (appRamCost[id]) {
-        used_ram += appRamCost[id];
-        updateSpecs();
-        updatePerf();
-        checkRamOverflow();
-    }
+    const appDelay = delays[global_cpu || 0].appOpen;
+    setTimeout(() => {
+        win.style.display = 'flex';
+        if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
+        if(id === 'browser') goHome();
+        if(id === 'notepad' && params.content !== undefined) {
+            document.getElementById('notepadText').value = params.content || '';
+            document.getElementById('notepad').dataset.file = params.file;
+            document.getElementById('notepad').dataset.path = params.path;
+        }
+        if(id === 'messenger'){
+            document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
+            document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
+            if (msgUser) listenForMessages();
+        }
+        if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
+        updateTaskbar();
+        bringToFront(id);
+        if (appRamCost[id]) {
+            used_ram += appRamCost[id];
+            updateSpecs();
+            updatePerf();
+            checkRamOverflow();
+        }
+    }, appDelay);
 }
 function checkRamOverflow() {
     if (used_ram >= global_ram) {
