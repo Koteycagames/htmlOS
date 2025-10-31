@@ -143,6 +143,8 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #admin_panel #pending_list div { margin-bottom: 10px; }
         #admin_panel #pending_list button { padding: 8px 16px; margin-left: 10px; }
+        #logoutBtn { position: absolute; bottom: 10px; left: 10px; padding: 10px 20px; font-size: 16px; background: #f00; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        #logoutBtn:hover { background: #c00; }
     </style>
 </head>
 <body>
@@ -174,6 +176,7 @@
     <button onclick="enterOS()">Зайти в ОС</button>
     <button onclick="goTo('store')">Купить</button>
     <button onclick="goTo('donate')">Монеты</button>
+    <button id="logoutBtn" onclick="logout()">Выйти</button>
 </div>
 <!-- STORE -->
 <div id="store" class="screen">
@@ -215,7 +218,6 @@
     <h3>Корзина:</h3>
     <div id="cart"></div>
     <button onclick="checkout()">Оплатить</button>
-    <button onclick="goTo('donate')">Монеты</button>
     <button onclick="goTo('main')">Назад</button>
 </div>
 <!-- DONATE MENU (Roblox-like) -->
@@ -619,6 +621,9 @@ function register() {
     auth.createUserWithEmailAndPassword(e, p)
         .then(cred => db.ref('users/' + cred.user.uid).set({coins:0,time_os:0,time_bomj:0,time_medium:0,time_ultra:0, cpu:0, ram:0, disk:0}))
         .catch(err => alert(err.message));
+}
+function logout() {
+    auth.signOut();
 }
 /* ==================== АВТОРИЗАЦИЯ ==================== */
 auth.onAuthStateChanged(u => {
