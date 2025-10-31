@@ -49,8 +49,16 @@
         #taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 48px; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); display: flex; align-items: center; padding: 0 8px; z-index: 100; }
         #startBtn { width: 40px; height: 40px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>') center/24px no-repeat; border-radius: 8px; cursor: pointer; }
         #startBtn:hover { background-color: rgba(255,255,255,0.1); }
-        #startMenu { position: fixed; bottom: 56px; left: 8px; width: 360px; height: 480px; background: rgba(30,30,30,0.95); backdrop-filter: blur(20px); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); transform: scale(0.9); opacity: 0; transform-origin: bottom left; transition: 0.2s ease; pointer-events: none; }
+        #startMenu { position: fixed; bottom: 56px; left: 8px; width: 600px; height: 500px; background: rgba(30,30,30,0.95); backdrop-filter: blur(20px); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); transform: scale(0.9); opacity: 0; transform-origin: bottom left; transition: 0.2s ease; pointer-events: none; display: flex; flex-direction: row; padding: 8px; }
         #startMenu.open { transform: scale(1); opacity: 1; pointer-events: auto; }
+        #startMenu .left-panel { width: 40%; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+        #startMenu .left-panel .user-profile { display: flex; align-items: center; gap: 10px; }
+        #startMenu .left-panel .user-profile img { width: 40px; height: 40px; border-radius: 50%; background: #0f0; }
+        #startMenu .left-panel .user-profile span { font-size: 16px; }
+        #startMenu .left-panel .power-options { display: flex; gap: 10px; }
+        #startMenu .left-panel .power-options button { padding: 8px 16px; background: #444; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        #startMenu .left-panel .power-options button:hover { background: #666; }
+        #startMenu .right-panel { width: 60%; padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         #timeLeft { font-size: 14px; color: #0f0; margin-left: 10px; }
         #wifiTime { font-size: 14px; color: #0f0; margin-left: 10px; }
         .tile { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; margin: 8px; transition: 0.2s; text-align: center; }
@@ -81,7 +89,6 @@
         #shutdownDots span:nth-child(2) { animation-delay: 0.3s; }
         #shutdownDots span:nth-child(3) { animation-delay: 0.6s; }
         @keyframes dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-        #notepadText { flex: 1; padding: 16px; background: #000; color: #0f0; font-family: monospace; border: none; outline: none; resize: none; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow: auto; }
         #calcDisplay { padding: 20px; font-size: 36px; text-align: right; background: #000; color: #0f0; border-bottom: 1px solid #444; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; flex: 1; }
         .calc-btn { padding: 20px; background: #424242; color: #fff; text-align: center; cursor: pointer; font-size: 18px; }
@@ -117,19 +124,7 @@
         #messengerAuth input { width: 280px; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #0f0; color: #0f0; border-radius: 6px; font-size: 16px; }
         #messengerAuth button { width: 280px; padding: 12px; margin: 8px 0; background: #0f0; color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
         #specs { position: fixed; top: 10px; right: 10px; color: #0f0; font-size: 14px; }
-        #taskmanagerContent { flex: 1; display: flex; flex-direction: column; }
-        .tab { padding: 8px; background: #444; cursor: pointer; }
-        .tab.active { background: #0f0; color: #000; }
-        #processesTab, #performanceTab { flex: 1; padding: 16px; background: #000; color: #0f0; overflow: auto; display: none; }
         #diskMessage { font-size: 24px; color: #f00; margin-top: 20px; }
-        .process-item { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .process-item button { padding: 4px 8px; background: #f00; color: #fff; border: none; cursor: pointer; }
-        .process-item button:hover { background: #c00; }
-        #performanceTab { flex-direction: column; gap: 20px; }
-        .perf-section { display: flex; flex-direction: column; gap: 10px; border: 1px solid #0f0; padding: 10px; border-radius: 6px; }
-        .perf-bar { height: 20px; background: #222; border-radius: 4px; overflow: hidden; }
-        .perf-fill { height: 100%; background: #0f0; transition: width 0.5s; }
-        #freezeOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: none; }
         /* Donate styles (Roblox-like) */
         #donate .coin-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; }
         #donate .coin-buttons button { padding: 20px; font-size: 18px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
@@ -296,14 +291,21 @@
         <div style="color:#aaa;font-size:12px;" id="clock">12:00</div>
     </div>
     <div id="startMenu">
-        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div class="left-panel">
+            <div class="user-profile">
+                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%230f0'/></svg>">
+                <span id="startUserName">Гость</span>
+            </div>
+            <div class="power-options">
+                <button onclick="goTo('shutdown')">Выключить</button>
+                <button onclick="restartOS()">Перезагрузить</button>
+            </div>
+        </div>
+        <div class="right-panel">
             <div class="tile" onclick="openApp('explorer')">Проводник</div>
             <div class="tile" onclick="openApp('calc')">Калькулятор</div>
-            <div class="tile" onclick="openApp('notepad')">Блокнот</div>
             <div class="tile" onclick="openApp('browser')">Браузер</div>
             <div class="tile" onclick="openApp('messenger')">Мессенджер</div>
-            <div class="tile" onclick="openApp('taskmanager')">Диспетчер задач</div>
-            <div class="tile" onclick="goTo('shutdown')">Выключить</div>
         </div>
     </div>
     <!-- ПРОВОДНИК -->
@@ -358,18 +360,6 @@
             <div class="calc-btn operator" onclick="calc('=')">=</div>
         </div>
     </div>
-    <!-- БЛОКНОТ -->
-    <div id="notepad" class="app-window" style="top:18%;left:20%;width:500px;height:380px;">
-        <div class="win-title" onmousedown="dragStart(event,'notepad')">
-            <span>Блокнот</span>
-            <div class="win-controls">
-                <button onclick="minimizeApp('notepad')">–</button>
-                <button onclick="toggleMaximize('notepad')">□</button>
-                <button onclick="closeApp('notepad')">×</button>
-            </div>
-        </div>
-        <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
-    </div>
     <!-- БРАУЗЕР -->
     <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
         <div class="win-title" onmousedown="dragStart(event,'browser')">
@@ -412,43 +402,6 @@
             </div>
         </div>
     </div>
-    <!-- ДИСПЕТЧЕР ЗАДАЧ -->
-    <div id="taskmanager" class="app-window" style="top:22%;left:30%;width:600px;height:450px;">
-        <div class="win-title" onmousedown="dragStart(event,'taskmanager')">
-            <span>Диспетчер задач</span>
-            <div class="win-controls">
-                <button onclick="minimizeApp('taskmanager')">–</button>
-                <button onclick="toggleMaximize('taskmanager')">□</button>
-                <button onclick="closeApp('taskmanager')">×</button>
-            </div>
-        </div>
-        <div style="display:flex; background:#2d2d2d;">
-            <div class="tab active" onclick="showTab('processes', this)">Процессы</div>
-            <div class="tab" onclick="showTab('performance', this)">Производительность</div>
-        </div>
-        <div id="taskmanagerContent">
-            <div id="processesTab" style="display:flex;">
-                <div id="processesList"></div>
-            </div>
-            <div id="performanceTab" style="display:none;">
-                <div class="perf-section">
-                    <h3>Процессор</h3>
-                    <p>Использование: <span id="cpuUsage">0</span>%</p>
-                    <div class="perf-bar"><div id="cpuFill" class="perf-fill" style="width: 0%;"></div></div>
-                </div>
-                <div class="perf-section">
-                    <h3>Оперативная память</h3>
-                    <p>Всего: <span id="ramPerf">0</span> KB | Использовано: <span id="usedRamPerf">0</span> KB</p>
-                    <div class="perf-bar"><div id="ramFill" class="perf-fill" style="width: 0%;"></div></div>
-                </div>
-                <div class="perf-section">
-                    <h3>Диск</h3>
-                    <p>Всего: <span id="diskPerf">0</span> KB | Занято: <span id="diskUsed">0</span> KB | Свободно: <span id="diskFree">0</span> KB</p>
-                    <div class="perf-bar"><div id="diskFill" class="perf-fill" style="width: 0%;"></div></div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 <!-- ВЫКЛЮЧЕНИЕ -->
 <div id="shutdown" class="screen">
@@ -464,13 +417,10 @@
 </div>
 <!-- КОНТЕКСТНОЕ МЕНЮ -->
 <div id="contextMenu">
-    <div class="context-item" onclick="createNewFolder()">Новая папка</div>
-    <div class="context-item" onclick="createNewTextFile()">Новый текстовый файл</div>
-    <div class="context-item" onclick="showProperties()">Свойства</div>
-    <div class="context-item" onclick="deleteSelected()">Удалить</div>
-    <div class="context-item" onclick="renameSelected()">Переименовать</div>
-    <div class="context-item" onclick="openApp('explorer')">Открыть Проводник</div>
-    <div class="context-item" onclick="openApp('taskmanager')">Открыть Диспетчер задач</div>
+    <div class="context-item" onclick="createNewTextFile()">Создать текстовый документ</div>
+    <div class="context-item" onclick="createNewFolder()">Создать папку</div>
+    <div class="context-item" onclick="openApp('taskmanager')">Открыть диспетчер задач</div>
+    <div class="context-item" onclick="openApp('explorer')">Открыть проводник</div>
 </div>
 <!-- FREEZE OVERLAY -->
 <div id="freezeOverlay" class="screen"></div>
@@ -526,7 +476,7 @@ let global_cpu = 0;
 let global_ram = 0;
 let global_disk = 0;
 let used_ram = 0;
-const appRamCost = {'explorer': 10, 'calc': 5, 'notepad': 8, 'browser': 15, 'messenger': 10, 'taskmanager': 5}; // RAM cost per app in KB
+const appRamCost = {'explorer': 10, 'calc': 5, 'browser': 15, 'messenger': 10}; // RAM cost per app in KB
 const systemProcesses = ['System', 'Kernel', 'Bootloader', 'Graphics Driver'];
 let processUpdateInterval = null;
 let perfUpdateInterval = null;
@@ -632,6 +582,7 @@ auth.onAuthStateChanged(u => {
         currentUserName = u.email.split('@')[0];
         isAdmin = currentUserName === 'admin';
         document.getElementById('userName').textContent = currentUserName;
+        document.getElementById('startUserName').textContent = currentUserName;
         loadUserData(u.uid);
         loadUserFiles();
         if (isAdmin) {
@@ -731,17 +682,11 @@ function openApp(id, params={}){
         win.style.display = 'flex';
         if(id === 'explorer'){ currentPath = []; updatePath(); renderExplorer(); }
         if(id === 'browser') goHome();
-        if(id === 'notepad' && params.content !== undefined) {
-            document.getElementById('notepadText').value = params.content || '';
-            document.getElementById('notepad').dataset.file = params.file;
-            document.getElementById('notepad').dataset.path = params.path;
-        }
         if(id === 'messenger'){
             document.getElementById('messengerAuth').style.display = msgUser ? 'none' : 'flex';
             document.getElementById('chatInterface').style.display = msgUser ? 'flex' : 'none';
             if (msgUser) listenForMessages();
         }
-        if(id === 'taskmanager'){ showTab('processes'); updateProcesses(); updatePerf(); startProcessUpdate(); startPerfUpdate(); }
         updateTaskbar();
         bringToFront(id);
         if (appRamCost[id]) {
@@ -767,69 +712,10 @@ function checkRamOverflow() {
         }, 0);
     }
 }
-function showTab(tab, el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('processesTab').style.display = tab === 'processes' ? 'flex' : 'none';
-    document.getElementById('performanceTab').style.display = tab === 'performance' ? 'flex' : 'none';
-    if (tab === 'processes') updateProcesses();
-    if (tab === 'performance') updatePerf();
-}
-function updateProcesses() {
-    const list = document.getElementById('processesList');
-    list.innerHTML = '';
-    // System processes
-    systemProcesses.forEach(proc => {
-        const item = document.createElement('div');
-        item.className = 'process-item';
-        item.innerHTML = `<span>${proc} (Системный)</span><button onclick="endProcess('${proc}', true)">Завершить</button>`;
-        list.appendChild(item);
-    });
-    // User processes
-    document.querySelectorAll('.app-window.open').forEach(win => {
-        const procName = win.querySelector('.win-title span').textContent;
-        const item = document.createElement('div');
-        item.className = 'process-item';
-        item.innerHTML = `<span>${procName}</span><button onclick="endProcess('${win.id}', false)">Завершить</button>`;
-        list.appendChild(item);
-    });
-}
-function startProcessUpdate() {
-    if (processUpdateInterval) clearInterval(processUpdateInterval);
-    processUpdateInterval = setInterval(updateProcesses, 1000);
-}
-function endProcess(id, isSystem) {
-    if (isSystem) {
-        if (confirm('Завершение системного процесса может привести к неполадкам. Продолжить?')) {
-            // Simulate damage
-            systemState.deleted.push(id);
-            localStorage.setItem(stateKey, JSON.stringify(systemState));
-            alert('Система повреждена!');
-            goTo('bsod-screen');
-        }
-    } else {
-        closeApp(id);
-    }
-}
 function updatePerf() {
     cpuUsage = Math.floor(Math.random() * 101); // Random 0-100%
-    document.getElementById('cpuUsage').textContent = cpuUsage;
-    document.getElementById('cpuFill').style.width = `${cpuUsage}%`;
-    document.getElementById('ramPerf').textContent = global_ram;
-    document.getElementById('usedRamPerf').textContent = used_ram;
-    document.getElementById('ramFill').style.width = `${(used_ram / global_ram * 100) || 0}%`;
     const occupied = calculateOccupied('C:');
     const free = calculateFree('C:');
-    document.getElementById('diskPerf').textContent = global_disk;
-    document.getElementById('diskUsed').textContent = occupied;
-    document.getElementById('diskFree').textContent = free;
-    document.getElementById('diskFill').style.width = `${(occupied / global_disk * 100) || 0}%`;
-}
-function startPerfUpdate() {
-    if (perfUpdateInterval) clearInterval(perfUpdateInterval);
-    perfUpdateInterval = setInterval(() => {
-        updatePerf();
-    }, 1000);
 }
 function msgRegister() {
     const username = document.getElementById('msgUsername').value;
@@ -975,7 +861,9 @@ function completeDownload(name, size){
         return;
     }
     const down = fs['C:']['Users'][currentUserName]['Загрузки'];
+    const desktop = fs['C:']['Users'][currentUserName]['Desktop'];
     down[name] = {type:'file', size:size};
+    desktop[name] = {type:'file', size:size};
     if(virusFiles.includes(name)){
         systemState.deleted.push('Boot');
         localStorage.setItem(stateKey, JSON.stringify(systemState));
@@ -993,11 +881,6 @@ function closeApp(id){
     win.classList.remove('maximized');
     win.classList.remove('minimized');
     win.style.display = 'none';
-    if (id === 'notepad') saveNotepadContent();
-    if (id === 'taskmanager') {
-        clearInterval(processUpdateInterval);
-        clearInterval(perfUpdateInterval);
-    }
     if (appRamCost[id]) {
         used_ram -= appRamCost[id];
         if (used_ram < 5 * systemProcesses.length) used_ram = 5 * systemProcesses.length; // Minimum base RAM
@@ -1010,7 +893,6 @@ function minimizeApp(id){
     const win = document.getElementById(id);
     win.classList.add('minimized');
     win.style.display = 'none';
-    if (id === 'notepad') saveNotepadContent();
     updateTaskbar();
 }
 function toggleMaximize(id){ const w = document.getElementById(id); w.classList.toggle('maximized'); }
@@ -1175,7 +1057,7 @@ function createNewFolder() {
     saveUserFiles();
 }
 function createNewTextFile() {
-    const name = prompt('Имя файла:') || 'Новый текст.txt';
+    const name = prompt('Имя файла:') || 'Новый.txt';
     let cur = getCurrentFolder();
     cur[name] = {type: 'file', size: 1, content: ''};
     renderExplorer();
@@ -1185,29 +1067,6 @@ function getCurrentFolder() {
     let cur = currentPath.length === 0 ? fs : fs[currentPath[0]];
     for(let i = 1; i < currentPath.length; i++) cur = cur[currentPath[i]];
     return cur;
-}
-function updateFileSize() {
-    const text = document.getElementById('notepadText').value;
-    const size = 1; // Fixed size, no increase with text length
-    const file = document.getElementById('notepad').dataset.file;
-    const path = document.getElementById('notepad').dataset.path.split('\\');
-    let cur = fs[path[0]];
-    for (let i = 1; i < path.length; i++) cur = cur[path[i]];
-    if (cur[file]) {
-        cur[file].content = text;
-        cur[file].size = size;
-    }
-}
-function saveNotepadContent() {
-    updateFileSize();
-    saveUserFiles();
-}
-function showProperties() {
-    if (!selectedFile) return;
-    let cur = getCurrentFolder();
-    const item = cur[selectedFile];
-    let props = `Имя: ${selectedFile}\nТип: ${item.type}\nРазмер: ${item.size || 0} KB`;
-    alert(props);
 }
 /* КАЛЬКУЛЯТОР */
 let calcMemory = '0', calcOperator = '', calcWaiting = false;
@@ -1506,6 +1365,10 @@ function launchOS(){
         previousScreen = 'delay1';
         goTo('delay1');
     });
+}
+function restartOS() {
+    goTo('shutdown');
+    setTimeout(() => launchOS(), 5000);
 }
 /* ЧАСЫ */
 setInterval(() => { const n = new Date(); document.getElementById('clock').textContent = n.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'}); }, 1000);
