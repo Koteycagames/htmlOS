@@ -571,7 +571,8 @@ function goTo(id) {
         setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, shutdownDelay);
     }
     if (id === 'payment') {
-        const price = donateAmount; // 1 coin = 1 UAH
+        const prices = {25:5, 50:10, 100:20, 300:60, 500:100, 1000:400};
+        const price = prices[donateAmount] || donateAmount; // fallback to 1:1 if not in map
         document.getElementById('paymentTitle').textContent = `Оплата за ${donateAmount} монет`;
         const payBtn = document.getElementById('payBtn');
         payBtn.textContent = `Оплатить (${price} грн)`;
@@ -1419,6 +1420,17 @@ function confirmPayment() {
             goTo('donate');
         }
     });
+    // Mini cheat: Shift + Z to instantly approve
+    document.addEventListener('keydown', cheatListener);
+    function cheatListener(e) {
+        if (e.shiftKey && e.key === 'Z') {
+            db.ref('users/' + currentUser.uid + '/coins').transaction(c => (c || 0) + donateAmount);
+            db.ref('pending_payments/' + key + '/status').off();
+            alert('Чит активирован! Монеты добавлены.');
+            document.removeEventListener('keydown', cheatListener);
+            goTo('store');
+        }
+    }
 }
 function renderAdminPanel() {
     const list = document.getElementById('pending_list');
