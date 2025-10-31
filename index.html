@@ -130,6 +130,15 @@
         .perf-bar { height: 20px; background: #222; border-radius: 4px; overflow: hidden; }
         .perf-fill { height: 100%; background: #0f0; transition: width 0.5s; }
         #freezeOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: none; }
+        /* Donate styles (Roblox-like) */
+        #donate .coin-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; }
+        #donate .coin-buttons button { padding: 20px; font-size: 18px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
+        #donate .coin-buttons button:hover { background: #0c0; }
+        #payment .payment-options { display: flex; flex-direction: column; gap: 15px; padding: 20px; }
+        #payment #instr { display: none; flex-direction: column; gap: 10px; padding: 20px; background: #222; border-radius: 8px; margin-top: 20px; font-size: 16px; }
+        #payment #waiting { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 20px; }
+        .spinner { border: 4px solid rgba(0,255,0,0.3); border-top: 4px solid #0f0; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -201,7 +210,41 @@
     <h3>Корзина:</h3>
     <div id="cart"></div>
     <button onclick="checkout()">Оплатить</button>
+    <button onclick="goTo('donate')">Монеты</button>
     <button onclick="goTo('main')">Назад</button>
+</div>
+<!-- DONATE MENU (Roblox-like) -->
+<div id="donate" class="screen">
+    <h2>Купить монеты</h2>
+    <div class="coin-buttons">
+        <button onclick="donateAmount=25; goTo('payment')">25 монет</button>
+        <button onclick="donateAmount=50; goTo('payment')">50 монет</button>
+        <button onclick="donateAmount=100; goTo('payment')">100 монет</button>
+        <button onclick="donateAmount=300; goTo('payment')">300 монет</button>
+        <button onclick="donateAmount=500; goTo('payment')">500 монет</button>
+        <button onclick="donateAmount=1000; goTo('payment')">1000 монет</button>
+    </div>
+    <button onclick="goTo('store')">Назад</button>
+</div>
+<!-- PAYMENT MENU -->
+<div id="payment" class="screen">
+    <h2 id="paymentTitle">Оплата</h2>
+    <div class="payment-options">
+        <button id="payBtn" onclick="initiatePayment()">Оплатить</button>
+        <button onclick="showInstructions()">Инструкция</button>
+    </div>
+    <div id="instr">
+        <p>1. нажмите Оплатить</p>
+        <p>2. отправьте нужную сумму на карту 4149 6293 6355 3595 (privat bank) с комментарием например: "ник: Admin"</p>
+        <p>3. нажмите Оплатил</p>
+        <p>4. ожидайте подтверждения опалаты</p>
+        <p>5. получайте сви монеты!</p>
+        <button onclick="hideInstructions()">Закрыть</button>
+    </div>
+    <div id="waiting">
+        <p>Ожидание подтверждения...</p>
+        <div class="spinner"></div>
+    </div>
 </div>
 <!-- ОС -->
 <div id="blackscreen" class="screen">
@@ -481,6 +524,7 @@ const delays = {
     2: { osLoad: 15000, appOpen: 3000, shutdown: 10000 },
     3: { osLoad: 10000, appOpen: 1000, shutdown: 5000 }
 };
+let donateAmount = 0;
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -509,6 +553,13 @@ function goTo(id) {
     if (id === 'shutdown') {
         const shutdownDelay = delays[global_cpu || 0].shutdown;
         setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, shutdownDelay);
+    }
+    if (id === 'payment') {
+        const price = donateAmount; // Assume 1 coin = 1 UAH for prototype
+        document.getElementById('paymentTitle').textContent = `Оплата за ${donateAmount} монет`;
+        document.getElementById('payBtn').textContent = `Оплатить (${price} грн)`;
+        document.getElementById('instr').style.display = 'none';
+        document.getElementById('waiting').style.display = 'none';
     }
 }
 function loadUserData(uid) {
@@ -1303,6 +1354,20 @@ function checkout(){
         updateCart();
         alert('Покупка завершена');
     });
+}
+/* DONATE FUNCTIONS */
+function showInstructions() {
+    document.getElementById('instr').style.display = 'flex';
+}
+function hideInstructions() {
+    document.getElementById('instr').style.display = 'none';
+}
+function initiatePayment() {
+    document.getElementById('payBtn').textContent = 'Оплатил';
+    document.getElementById('payBtn').disabled = true;
+    document.getElementById('waiting').style.display = 'flex';
+    // For prototype, no real payment - just simulate waiting forever or timeout
+    // In real, you could add logic to check payment status from DB
 }
 /* ВХОД В ОС */
 function enterOS(){
