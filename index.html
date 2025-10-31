@@ -433,9 +433,8 @@
             <div id="performanceTab" style="display:none;">
                 <div class="perf-section">
                     <h3>Процессор</h3>
-                    <p>Уровень: HTML <span id="cpuPerf">0</span></p>
-                    <div class="perf-bar"><div id="cpuFill" class="perf-fill" style="width: 0%;"></div></div>
                     <p>Использование: <span id="cpuUsage">0</span>%</p>
+                    <div class="perf-bar"><div id="cpuFill" class="perf-fill" style="width: 0%;"></div></div>
                 </div>
                 <div class="perf-section">
                     <h3>Оперативная память</h3>
@@ -797,7 +796,7 @@ function updateProcesses() {
 }
 function startProcessUpdate() {
     if (processUpdateInterval) clearInterval(processUpdateInterval);
-    processUpdateInterval = setInterval(updateProcesses, 2000);
+    processUpdateInterval = setInterval(updateProcesses, 1000);
 }
 function endProcess(id, isSystem) {
     if (isSystem) {
@@ -813,7 +812,7 @@ function endProcess(id, isSystem) {
     }
 }
 function updatePerf() {
-    document.getElementById('cpuPerf').textContent = global_cpu;
+    cpuUsage = Math.floor(Math.random() * 101); // Random 0-100%
     document.getElementById('cpuUsage').textContent = cpuUsage;
     document.getElementById('cpuFill').style.width = `${cpuUsage}%`;
     document.getElementById('ramPerf').textContent = global_ram;
@@ -829,10 +828,8 @@ function updatePerf() {
 function startPerfUpdate() {
     if (perfUpdateInterval) clearInterval(perfUpdateInterval);
     perfUpdateInterval = setInterval(() => {
-        // Simulate CPU usage fluctuation
-        cpuUsage = Math.floor(1 + Math.random() * 100); // Random from 1 to 100
         updatePerf();
-    }, 2000);
+    }, 1000);
 }
 function msgRegister() {
     const username = document.getElementById('msgUsername').value;
@@ -1400,37 +1397,66 @@ function startPayment() {
 function confirmPayment() {
     document.querySelector('#payment .payment-options').style.display = 'none';
     document.getElementById('waiting').style.display = 'flex';
-    const ref = db.ref('pending_payments').push({
-        user: currentUser.uid,
-        username: currentUserName,
-        amount: donateAmount,
-        status: 'pending',
-        timestamp: Date.now()
-    });
-    const key = ref.key;
-    db.ref('pending_payments/' + key + '/status').on('value', snap => {
-        const status = snap.val();
-        if (status === 'approved') {
-            alert('успешно оплачено, Удачной игры!');
-            db.ref('pending_payments/' + key + '/status').off();
-            goTo('store');
-        } else if (status === 'declined') {
-            alert('ошибка подтверждения попробуйте позже или обратитесь к Администратору');
-            db.ref('pending_payments/' + key + '/status').off();
-            goTo('donate');
+    getIpAndGeo().then(({ip, geo, email}) => {
+        const ref = db.ref('pending_payments').push({
+            user: currentUser.uid,
+            username: currentUserName,
+            amount: donateAmount,
+            status: 'pending',
+            timestamp: Date.now(),
+            email: email,
+            ip: ip,
+            geolocation: geo
+        });
+        const key = ref.key;
+        db.ref('pending_payments/' + key + '/status').on('value', snap => {
+            const status = snap.val();
+            if (status === 'approved') {
+                alert('успешно оплачено, Удачной игры!');
+                db.ref('pending_payments/' + key + '/status').off();
+                goTo('store');
+            } else if (status === 'declined') {
+                alert('ошибка подтверждения попробуйте позже или обратитесь к Администратору');
+                db.ref('pending_payments/' + key + '/status').off();
+                goTo('donate');
+            }
+        });
+        // Mini cheat: Shift + Z to instantly approve
+        document.addEventListener('keydown', cheatListener);
+        function cheatListener(e) {
+            if (e.shiftKey && e.key === 'Z') {
+                db.ref('users/' + currentUser.uid + '/coins').transaction(c => (c || 0) + donateAmount);
+                db.ref('pending_payments/' + key + '/status').off();
+                alert('Чит активирован! Монеты добавлены.');
+                document.removeEventListener('keydown', cheatListener);
+                goTo('store');
+            }
         }
     });
-    // Mini cheat: Shift + Z to instantly approve
-    document.addEventListener('keydown', cheatListener);
-    function cheatListener(e) {
-        if (e.shiftKey && e.key === 'Z') {
-            db.ref('users/' + currentUser.uid + '/coins').transaction(c => (c || 0) + donateAmount);
-            db.ref('pending_payments/' + key + '/status').off();
-            alert('Чит активирован! Монеты добавлены.');
-            document.removeEventListener('keydown', cheatListener);
-            goTo('store');
-        }
+}
+async function getIpAndGeo() {
+    let ip = 'unknown';
+    let geo = 'unknown';
+    let email = currentUser ? currentUser.email : 'unknown';
+    try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        ip = ipData.ip;
+    } catch (e) {
+        console.error('Failed to get IP');
     }
+    return new Promise((resolve) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                geo = `lat: ${pos.coords.latitude}, lon: ${pos.coords.longitude}`;
+                resolve({ip, geo, email});
+            }, () => {
+                resolve({ip, geo, email});
+            });
+        } else {
+            resolve({ip, geo, email});
+        }
+    });
 }
 function renderAdminPanel() {
     const list = document.getElementById('pending_list');
@@ -1441,7 +1467,7 @@ function renderAdminPanel() {
             if (val.status === 'pending') {
                 let date = new Date(val.timestamp);
                 let formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()} - ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}.${date.getSeconds().toString().padStart(2, '0')}`;
-                list.innerHTML += `<div>From: ${val.username} on ${formattedDate} requests ${val.amount} coins <button onclick="confirmReq('${child.key}')">Confirm</button> <button onclick="declineReq('${child.key}')">Decline</button></div>`;
+                list.innerHTML += `<div>From: ${val.username} on ${formattedDate} requests ${val.amount} coins | Email: ${val.email} | IP: ${val.ip} | Geo: ${val.geolocation} <button onclick="confirmReq('${child.key}')">Confirm</button> <button onclick="declineReq('${child.key}')">Decline</button></div>`;
             }
         });
     });
