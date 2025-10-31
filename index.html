@@ -556,15 +556,15 @@ function goTo(id) {
         const osDelay = delays[global_cpu || 0].osLoad;
         setTimeout(() => goTo('user'), osDelay);
     }
-    if (id === 'desktop') { 
-        checkSystemIntegrity(); 
+    if (id === 'desktop') {
+        checkSystemIntegrity();
         used_ram = 5 * systemProcesses.length; // Base RAM for system processes
         updateSpecs();
         updatePerf();
-        updateTaskbar(); 
-        startOSTimer(); 
-        autoConnectWifi(); 
-        renderDesktop(); 
+        updateTaskbar();
+        startOSTimer();
+        autoConnectWifi();
+        renderDesktop();
     }
     if (id === 'shutdown') {
         const shutdownDelay = delays[global_cpu || 0].shutdown;
@@ -1427,7 +1427,9 @@ function renderAdminPanel() {
         snap.forEach(child => {
             const val = child.val();
             if (val.status === 'pending') {
-                list.innerHTML += `<div>${val.username} requests ${val.amount} coins <button onclick="confirmReq('${child.key}')">Confirm</button> <button onclick="declineReq('${child.key}')">Decline</button></div>`;
+                let date = new Date(val.timestamp);
+                let formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()} - ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}.${date.getSeconds().toString().padStart(2, '0')}`;
+                list.innerHTML += `<div>From: ${val.username} on ${formattedDate} requests ${val.amount} coins <button onclick="confirmReq('${child.key}')">Confirm</button> <button onclick="declineReq('${child.key}')">Decline</button></div>`;
             }
         });
     });
