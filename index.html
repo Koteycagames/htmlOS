@@ -135,10 +135,14 @@
         #donate .coin-buttons button { padding: 20px; font-size: 18px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
         #donate .coin-buttons button:hover { background: #0c0; }
         #payment .payment-options { display: flex; flex-direction: column; gap: 15px; padding: 20px; }
+        #payment button { padding: 16px 32px; font-size: 20px; background: #0f0; color: #000; border: none; border-radius: 8px; cursor: pointer; }
+        #payment button:hover { background: #0c0; }
         #payment #instr { display: none; flex-direction: column; gap: 10px; padding: 20px; background: #222; border-radius: 8px; margin-top: 20px; font-size: 16px; }
         #payment #waiting { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 20px; }
         .spinner { border: 4px solid rgba(0,255,0,0.3); border-top: 4px solid #0f0; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #admin_panel #pending_list div { margin-bottom: 10px; }
+        #admin_panel #pending_list button { padding: 8px 16px; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -169,6 +173,7 @@
     <div id="specs">ЦП: HTML 0 | ОЗУ: 0 KB (использовано: 0 KB) | Диск: 0 KB</div>
     <button onclick="enterOS()">Зайти в ОС</button>
     <button onclick="goTo('store')">Купить</button>
+    <button onclick="goTo('donate')">Монеты</button>
 </div>
 <!-- STORE -->
 <div id="store" class="screen">
@@ -230,8 +235,9 @@
 <div id="payment" class="screen">
     <h2 id="paymentTitle">Оплата</h2>
     <div class="payment-options">
-        <button id="payBtn" onclick="initiatePayment()">Оплатить</button>
+        <button id="payBtn" onclick="startPayment()">Оплатить</button>
         <button onclick="showInstructions()">Инструкция</button>
+        <button onclick="goTo('donate')">Назад</button>
     </div>
     <div id="instr">
         <p>1. нажмите Оплатить</p>
@@ -245,6 +251,12 @@
         <p>Ожидание подтверждения...</p>
         <div class="spinner"></div>
     </div>
+</div>
+<!-- ADMIN PANEL -->
+<div id="admin_panel" class="screen">
+    <h2>Admin Panel - Pending Payments</h2>
+    <div id="pending_list"></div>
+    <button onclick="goTo('main')">Назад</button>
 </div>
 <!-- ОС -->
 <div id="blackscreen" class="screen">
@@ -525,8 +537,10 @@ const delays = {
     3: { osLoad: 10000, appOpen: 1000, shutdown: 5000 }
 };
 let donateAmount = 0;
+let isAdmin = false;
 /* ==================== ФУНКЦИИ ДОЛЖНЫ БЫТЬ ВЫШЕ ==================== */
 function goTo(id) {
+    if (id === 'admin_panel' && !isAdmin) return;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const el = document.getElementById(id);
     if (el) el.classList.add('active');
@@ -555,11 +569,17 @@ function goTo(id) {
         setTimeout(() => { saveUserFiles(); localStorage.setItem(stateKey, JSON.stringify(systemState)); goTo('main'); }, shutdownDelay);
     }
     if (id === 'payment') {
-        const price = donateAmount; // Assume 1 coin = 1 UAH for prototype
+        const price = donateAmount; // 1 coin = 1 UAH
         document.getElementById('paymentTitle').textContent = `Оплата за ${donateAmount} монет`;
-        document.getElementById('payBtn').textContent = `Оплатить (${price} грн)`;
+        const payBtn = document.getElementById('payBtn');
+        payBtn.textContent = `Оплатить (${price} грн)`;
+        payBtn.onclick = startPayment;
+        document.querySelector('.payment-options').style.display = 'flex';
         document.getElementById('instr').style.display = 'none';
         document.getElementById('waiting').style.display = 'none';
+    }
+    if (id === 'admin_panel') {
+        renderAdminPanel();
     }
 }
 function loadUserData(uid) {
@@ -605,9 +625,13 @@ auth.onAuthStateChanged(u => {
     if (u) {
         currentUser = u;
         currentUserName = u.email.split('@')[0];
+        isAdmin = currentUserName === 'Admin';
         document.getElementById('userName').textContent = currentUserName;
         loadUserData(u.uid);
         loadUserFiles();
+        if (isAdmin) {
+            document.getElementById('systemButtons').innerHTML += '<button onclick="goTo(\'admin_panel\')">Admin Panel</button>';
+        }
         goTo('main');
     } else {
         currentUser = null;
@@ -1362,12 +1386,56 @@ function showInstructions() {
 function hideInstructions() {
     document.getElementById('instr').style.display = 'none';
 }
-function initiatePayment() {
-    document.getElementById('payBtn').textContent = 'Оплатил';
-    document.getElementById('payBtn').disabled = true;
+function startPayment() {
+    const payBtn = document.getElementById('payBtn');
+    payBtn.textContent = 'Оплатил';
+    payBtn.onclick = confirmPayment;
+}
+function confirmPayment() {
+    document.querySelector('#payment .payment-options').style.display = 'none';
     document.getElementById('waiting').style.display = 'flex';
-    // For prototype, no real payment - just simulate waiting forever or timeout
-    // In real, you could add logic to check payment status from DB
+    const ref = db.ref('pending_payments').push({
+        user: currentUser.uid,
+        username: currentUserName,
+        amount: donateAmount,
+        status: 'pending',
+        timestamp: Date.now()
+    });
+    const key = ref.key;
+    db.ref('pending_payments/' + key + '/status').on('value', snap => {
+        const status = snap.val();
+        if (status === 'approved') {
+            alert('успешно оплачено, Удачной игры!');
+            db.ref('pending_payments/' + key + '/status').off();
+            goTo('store');
+        } else if (status === 'declined') {
+            alert('ошибка подтверждения попробуйте позже или обратитесь к Администратору');
+            db.ref('pending_payments/' + key + '/status').off();
+            goTo('donate');
+        }
+    });
+}
+function renderAdminPanel() {
+    const list = document.getElementById('pending_list');
+    list.innerHTML = '';
+    db.ref('pending_payments').once('value').then(snap => {
+        snap.forEach(child => {
+            const val = child.val();
+            if (val.status === 'pending') {
+                list.innerHTML += `<div>${val.username} requests ${val.amount} coins <button onclick="confirmReq('${child.key}')">Confirm</button> <button onclick="declineReq('${child.key}')">Decline</button></div>`;
+            }
+        });
+    });
+}
+function confirmReq(id) {
+    db.ref('pending_payments/' + id).once('value').then(snap => {
+        const val = snap.val();
+        db.ref('users/' + val.user + '/coins').transaction(c => (c || 0) + val.amount);
+        db.ref('pending_payments/' + id).update({status: 'approved'});
+    });
+}
+function declineReq(id) {
+    db.ref('pending_payments/' + id).update({status: 'declined'});
 }
 /* ВХОД В ОС */
 function enterOS(){
@@ -1398,6 +1466,7 @@ function launchOS(){
 setInterval(() => { const n = new Date(); document.getElementById('clock').textContent = n.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'}); }, 1000);
 /* ИНИЦИАЛИЗАЦИЯ */
 goTo('login');
+db.ref('pending_payments').on('child_changed', () => { if (isAdmin && document.getElementById('admin_panel').classList.contains('active')) renderAdminPanel(); });
 function renderDesktop(){
     // Функция не была определена в исходном коде, но вызывалась. Если нужно, добавьте логику для рендеринга десктопа здесь.
 }
