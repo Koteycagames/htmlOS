@@ -630,7 +630,7 @@ auth.onAuthStateChanged(u => {
     if (u) {
         currentUser = u;
         currentUserName = u.email.split('@')[0];
-        isAdmin = currentUserName === 'Admin';
+        isAdmin = currentUserName === 'admin';
         document.getElementById('userName').textContent = currentUserName;
         loadUserData(u.uid);
         loadUserFiles();
