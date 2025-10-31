@@ -368,7 +368,7 @@
                 <button onclick="closeApp('notepad')">×</button>
             </div>
         </div>
-        <textarea id="notepadText" placeholder="Начните печатать..." oninput="updateFileSize()"></textarea>
+        <textarea id="notepadText" placeholder="Начните печатать..."></textarea>
     </div>
     <!-- БРАУЗЕР -->
     <div id="browser" class="app-window" style="top:12%;left:12%;width:800px;height:600px;">
@@ -423,8 +423,8 @@
             </div>
         </div>
         <div style="display:flex; background:#2d2d2d;">
-            <div class="tab active" onclick="showTab('processes')">Процессы</div>
-            <div class="tab" onclick="showTab('performance')">Производительность</div>
+            <div class="tab active" onclick="showTab('processes', this)">Процессы</div>
+            <div class="tab" onclick="showTab('performance', this)">Производительность</div>
         </div>
         <div id="taskmanagerContent">
             <div id="processesTab" style="display:flex;">
@@ -767,9 +767,9 @@ function checkRamOverflow() {
         }, 0);
     }
 }
-function showTab(tab) {
+function showTab(tab, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    el.classList.add('active');
     document.getElementById('processesTab').style.display = tab === 'processes' ? 'flex' : 'none';
     document.getElementById('performanceTab').style.display = tab === 'performance' ? 'flex' : 'none';
     if (tab === 'processes') updateProcesses();
@@ -1188,7 +1188,7 @@ function getCurrentFolder() {
 }
 function updateFileSize() {
     const text = document.getElementById('notepadText').value;
-    const size = 1 + Math.floor(text.length / 30);
+    const size = 1; // Fixed size, no increase with text length
     const file = document.getElementById('notepad').dataset.file;
     const path = document.getElementById('notepad').dataset.path.split('\\');
     let cur = fs[path[0]];
