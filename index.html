@@ -290,13 +290,11 @@
 <div id="desktop" class="screen">
     <div id="desktop-icons"></div>
     <div id="taskbar">
-        <div id="startBtn" onclick="toggleStartMenu()"></div>
-        <div id="timeLeft">Времени осталось: 0 мин</div>
+        <div id="startBtn" onclick="toggleStartMenu(event)"></div> <div id="timeLeft">Времени осталось: 0 мин</div>
         <div id="wifiTime">Wi-Fi: 0 мин</div>
         <div id="taskbar-apps"></div>
         <div style="flex:1"></div>
-        <div id="wifiBtn" onclick="toggleWifiMenu()" style="width:40px;height:40px;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M12%2021l-1-2a7%207%200%200114%200l-1%202a5%205%200%2000-12%200zm-3-4a10%2010%200%200121%200l-1%202a8%208%200%2000-19%200l-1-2zm-3-4a13%2013%200%200127%200l-1%202a11%2011%200%2000-25%200l-1-2z%22%2F%3E%3C%2Fsvg%3E') center/24px no-repeat;border-radius:8px;cursor:pointer;margin-right:8px;"></div>
-        <div style="color:#aaa;font-size:12px;" id="clock">12:00</div>
+        <div id="wifiBtn" onclick="toggleWifiMenu(event)" style="width:40px;height:40px;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M12%2021l-1-2a7%207%200%200114%200l-1%202a5%205%200%2000-12%200zm-3-4a10%2010%200%200121%200l-1%202a8%208%200%2000-19%200l-1-2zm-3-4a13%2013%200%200127%200l-1%202a11%2011%200%2000-25%200l-1-2z%22%2F%3E%3C%2Fsvg%3E') center/24px no-repeat;border-radius:8px;cursor:pointer;margin-right:8px;"></div> <div style="color:#aaa;font-size:12px;" id="clock">12:00</div>
     </div>
     <div id="startMenu">
         <div class="left-panel">
@@ -1144,7 +1142,16 @@ function openFile(name, item) {
         renderExplorer(); 
     }
     else if(item.type === 'file' && name.endsWith('.txt')){
-        openApp('notepad', {file: name, path: [...currentPath], content: item.content || ''});
+        // [ИСПРАВЛЕНО] Определяем правильный путь. Если мы на C:, то currentPath = ['C:']
+        let filePath;
+        if (currentPath.length > 0) {
+            filePath = [...currentPath];
+        } else {
+            // Этого не должно случиться, если мы не на диске, но на всякий случай
+            // Если мы на рабочем столе, путь другой
+            filePath = ['C:', 'Users', currentUserName, 'Desktop'];
+        }
+        openApp('notepad', {file: name, path: filePath, content: item.content || ''});
     } else if(item.type === 'file' && name.endsWith('.exe')){
         if(virusFiles.includes(name)){
             document.body.classList.add('flicker');
@@ -1196,8 +1203,7 @@ function renameSelected(fromDesktop = false){
     
     // Проверка на .txt
     if (selectedFile.endsWith('.txt') && !nn.endsWith('.txt')) {
-        alert('Имя файла должно заканчиваться на .txt');
-        return;
+        nn += '.txt'; // Автоматически добавляем расширение
     }
     
     cur[nn] = cur[selectedFile];
@@ -1318,7 +1324,8 @@ function updateTaskbar(){
     });
 }
 /* ПУСК И Wi-Fi */
-function toggleStartMenu(){
+function toggleStartMenu(e){
+    e.stopPropagation(); // <-- ИСПРАВЛЕНО
     const m = document.getElementById('startMenu');
     m.classList.toggle('open');
 }
@@ -1341,7 +1348,8 @@ function renderStartMenu() {
         panel.appendChild(tile);
     }
 }
-function toggleWifiMenu(){
+function toggleWifiMenu(e){
+    e.stopPropagation(); // <-- ИСПРАВЛЕНО
     const m = document.getElementById('wifiMenu');
     m.classList.toggle('open');
 }
@@ -1651,6 +1659,9 @@ function openFileFromContext() {
     if (!contextTargetFile) return;
     const item = fs['C:']['Users'][currentUserName]['Desktop'][contextTargetFile];
     if (item) {
+        // [ИСПРАВЛЕНО] Путь для файла на рабочем столе
+        const desktopPath = ['C:', 'Users', currentUserName, 'Desktop'];
+        // Передаем правильный путь в openFile, который передаст его в openApp('notepad')
         openFile(contextTargetFile, item);
     }
 }
